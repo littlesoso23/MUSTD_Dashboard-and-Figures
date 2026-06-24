@@ -497,9 +497,8 @@ body {
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showTab('dashboard')">Dashboard</button>
-    <button class="nav-btn" onclick="showTab('figures')">Figures</button>
+    <button class="nav-btn" onclick="showTab('working')">Still Working On</button>
     <button class="nav-btn" onclick="showTab('data')">Edit data</button>
-    <button class="nav-btn dx-btn" id="dxBtn" onclick="toggleDx()">Dx overlay</button>
   </nav>
 </div>
 
@@ -516,12 +515,14 @@ body {
 
   <div class="chart-card">
     <div class="chart-header">
-      <div class="chart-title">Figure 1 &mdash; Cumulative participation pipeline</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+        <div class="chart-title">Figure 1 &mdash; Cumulative participation pipeline</div>
+        <button class="nav-btn dx-btn" id="dxBtn" onclick="toggleDx()" style="padding:6px 12px;font-size:11px;border-left:1px solid var(--rule);">Dx overlay</button>
+      </div>
       <div class="legend" id="mainLegend">
         <span class="legend-item"><span class="li-line" style="background:var(--blue)"></span><span class="li-dot" style="background:var(--blue)"></span>Dashboard</span>
         <span class="legend-item"><span class="li-line" style="background:var(--green)"></span><span class="li-dot" style="background:var(--green)"></span>BL Completed</span>
-        <span class="legend-item"><span class="li-swatch" style="background:rgba(100,100,100,0.09);border:1px solid #aaa"></span>Not completed</span>
-        <span class="legend-item"><span class="li-dash" style="border-color:rgba(196,69,30,0.55)"></span>Expired / active boundary</span>
+        <span class="legend-item"><span class="li-swatch" style="background:rgba(150,150,150,0.18);border:1px solid #aaa"></span>Active (not expired)</span>
         <span class="legend-item"><span class="li-dash" style="border-color:var(--coral)"></span>Goal</span>
         <span class="legend-item"><span class="li-dash" style="border-color:#aaa;border-top-style:dotted"></span>Projected</span>
         <span id="dxLegend" style="display:none;gap:14px;" class="legend-item">
@@ -543,6 +544,20 @@ body {
     <div style="position:relative;width:100%;height:420px;">
       <canvas id="mainChart"></canvas>
     </div>
+    <div id="splitCharts" style="display:none;display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:1.5rem;">
+      <div>
+        <div style="font-size:12px;font-weight:600;margin-bottom:0.75rem;color:var(--ink);">Overall</div>
+        <div style="position:relative;width:100%;height:320px;"><canvas id="splitOverall"></canvas></div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;margin-bottom:0.75rem;color:var(--plum);">With Depression Dx</div>
+        <div style="position:relative;width:100%;height:320px;"><canvas id="splitDx"></canvas></div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;margin-bottom:0.75rem;color:var(--blue);">Without Depression Dx</div>
+        <div style="position:relative;width:100%;height:320px;"><canvas id="splitNoDx"></canvas></div>
+      </div>
+    </div>
     <div class="band-note">
       <strong>Reading the bands:</strong> The shaded gap between the Dashboard line and the BL Completed line = everyone who reached the Dashboard but has not yet completed baseline. The dashed coral line inside the gap marks the expired/active boundary — below it: cumulative expired; above it: still active in their BL window. Active = Dashboard &minus; Completed &minus; Expired.
     </div>
@@ -556,38 +571,12 @@ body {
     Cumulative May-26: 491 Dashboard &middot; 309 completed (63%) &middot; 116 expired (24%) &middot; 66 active (13%) &middot; 309+116+66 = 491 &check;
   </div>
 
-</div>
-
-<!-- ═══════════════ FIGURES ═══════════════ -->
-<div id="figures" class="section">
-
   <!-- Figure 2 -->
   <div class="fig-card">
     <div class="section-label">Figure 2</div>
     <div class="section-heading">Does depression predict who drops off before completing baseline?</div>
     <div class="section-sub">Side-by-side comparison of Dashboard participants with vs. without a depression diagnosis. If conversion rates are similar, Dx is not the driver of pre-baseline dropout.</div>
     <div id="fig2"></div>
-    <div class="math-block">
-      <strong>Calculations</strong><br>
-      <span class="mpill">Dx conversion = Dx BL completed &divide; Dx at Dashboard = 54 &divide; 90</span><br>
-      <span class="mpill">Non-Dx conversion = Non-Dx BL completed &divide; Non-Dx at Dashboard = 172 &divide; 261</span><br>
-      <span class="mpill">Overall = 226 &divide; 351 = 64%</span><br>
-      Non-Dx Dashboard = 351 &minus; 90 = 261 &middot; Non-Dx BL = 226 &minus; 54 = 172 &middot; "Did not complete" includes both expired and still-active participants.
-    </div>
-  </div>
-
-  <!-- Figure 3 -->
-  <div class="fig-card">
-    <div class="section-label">Figure 3</div>
-    <div class="section-heading">Does depression predict who expires after reaching the Dashboard?</div>
-    <div class="section-sub">Of the 86 expired baselines, what share had a depression diagnosis? Expired participants never reached dep_dx_past in the survey — this number requires cross-referencing enrollment records.</div>
-    <div id="fig3"></div>
-    <div class="math-block">
-      <strong>Calculations (once expired Dx count is available)</strong><br>
-      <span class="mpill">Dx expiry rate = expired Dx &divide; 90 (total Dx at Dashboard)</span><br>
-      <span class="mpill">Non-Dx expiry rate = (86 &minus; expired Dx) &divide; 261 (total non-Dx at Dashboard)</span><br>
-      Denominator is Dashboard, not BL completed, because expired participants never completed the survey.
-    </div>
   </div>
 
   <!-- Figure 4 -->
@@ -601,6 +590,25 @@ body {
       <span class="mpill">Monthly expiry rate = expired &divide; Dashboard entrants that month &times; 100</span><br>
       Feb: 37 &divide; 123 = 30% &middot; Mar: 32 &divide; 93 = 34% &middot; Apr: 17 &divide; 135 = 13%<br>
       The rate declined sharply in April despite higher enrollment — a meaningful retention improvement.
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════ FIGURES ═══════════════ -->
+<div id="working" class="section">
+
+  <!-- Figure 3 -->
+  <div class="fig-card">
+    <div class="section-label">Figure 3</div>
+    <div class="section-heading">Does depression predict who expires after reaching the Dashboard?</div>
+    <div class="section-sub">Of the expired baselines, what share had a depression diagnosis? Expired participants never reached dep_dx_past in the survey — this number requires cross-referencing enrollment records.</div>
+    <div id="fig3"></div>
+    <div class="math-block">
+      <strong>Calculations (once expired Dx count is available)</strong><br>
+      <span class="mpill">Dx expiry rate = expired Dx &divide; total Dx at Dashboard</span><br>
+      <span class="mpill">Non-Dx expiry rate = (total expired &minus; expired Dx) &divide; total non-Dx at Dashboard</span><br>
+      Denominator is Dashboard, not BL completed, because expired participants never completed the survey.
     </div>
   </div>
 
@@ -681,6 +689,21 @@ function stdNormCDF(x){
   var prob=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));
   return x>0?1-prob:prob;
 }
+
+// Chi-squared test for 2x2 contingency table
+function chiSquaredTest(x1,n1,x2,n2){
+  var y1=n1-x1, y2=n2-x2;
+  var n=n1+n2;
+  var x_total=x1+x2, y_total=y1+y2;
+  var e11=(n1*x_total)/n;
+  var e12=(n1*y_total)/n;
+  var e21=(n2*x_total)/n;
+  var e22=(n2*y_total)/n;
+  var chi2=((Math.abs(x1*y2-x2*y1)-n/2)*(Math.abs(x1*y2-x2*y1)-n/2)*n)/(n1*n2*x_total*y_total);
+  var pValue=chi2<=0?1:2*(1-stdNormCDF(Math.sqrt(chi2)));
+  return {chi2:chi2,pValue:pValue,p1:x1/n1,p2:x2/n2};
+}
+
 const num=v=>v!==''&&v!=null&&!isNaN(parseFloat(v))?parseFloat(v):null;
 
 function buildCum(){
@@ -709,11 +732,11 @@ function showTab(id){
     const t=b.textContent.trim().toLowerCase();
     b.classList.toggle('active',
       (id==='dashboard'&&t==='dashboard')||
-      (id==='figures'&&t==='figures')||
+      (id==='working'&&t==='still working on')||
       (id==='data'&&t==='edit data'));
   });
   if(id==='dashboard') renderDashboard();
-  if(id==='figures')   renderFigures();
+  if(id==='working')   renderFig3();
   if(id==='data')      renderDataTable();
 }
 
@@ -726,6 +749,8 @@ function renderDashboard(){
   renderMetrics(l);
   renderAnnotation(l,months,cum);
   renderMainChart(cum,months);
+  renderFig2();
+  renderFig4();
 }
 
 function renderMetrics(l){
@@ -832,16 +857,19 @@ function renderMainChart(cum,months){
       {label:'Dx BL lower',data:showDx?dxBelowArr:labels.map(()=>null),
         borderColor:'rgba(0,0,0,0)',backgroundColor:'rgba(91,45,110,0.25)',
         borderWidth:0,pointRadius:0,tension:0.2,fill:'+1',spanGaps:false,order:5},
-      // BL Completed line (green) — anchor for both Dx bands
+      // BL Completed line (green) — anchor for active shading
       {label:'BL Completed',data:compArr,borderColor:'#1A7A5E',backgroundColor:'transparent',borderWidth:2,pointBackgroundColor:'#1A7A5E',pointRadius:labels.map(m=>cum[m]?4:0),tension:0.2,fill:false,spanGaps:false,order:4},
+      // Active shading: sits between Completed and Dashboard, representing cumActive
+      // fill:'-1' fills DOWN from this line to the previous dataset (BL Completed)
+      {label:'Active (shaded)',data:labels.map(m=>cum[m]?.cumActive!=null?cum[m].cumCompleted+cum[m].cumActive:null),
+        borderColor:'rgba(0,0,0,0)',backgroundColor:'rgba(150,150,150,0.18)',
+        borderWidth:0,pointRadius:0,tension:0.2,fill:'-1',spanGaps:false,order:3},
       // Dx band ABOVE green line: sits between compArr and dxAboveArr
       // dxAboveArr = compArr + (cumDxDash - cumDxBL)  (Dx people in not-completed zone)
-      // fill:'-1' fills from this line DOWN to the previous dataset = BL Completed
+      // fill:'-1' fills from this line DOWN to the previous dataset (Active when visible, BL Completed when hidden)
       {label:'Dx above',data:showDx?dxAboveArr:labels.map(()=>null),
         borderColor:'rgba(0,0,0,0)',backgroundColor:'rgba(91,45,110,0.13)',
         borderWidth:0,pointRadius:0,tension:0.2,fill:'-1',spanGaps:false,order:3},
-      {label:'Not Completed',data:dashArr,borderColor:'rgba(0,0,0,0)',backgroundColor:'rgba(100,100,100,0.11)',borderWidth:0,pointRadius:0,tension:0.2,fill:'-1',spanGaps:false,order:3},
-      {label:'Expired marker',data:expMarkerArr,borderColor:'rgba(196,69,30,0.85)',backgroundColor:'transparent',borderDash:[6,3],borderWidth:2,pointRadius:labels.map(m=>cum[m]!=null?3:0),pointBackgroundColor:'rgba(196,69,30,0.85)',pointStyle:'line',tension:0.2,fill:false,spanGaps:false,order:2},
       {label:'Dashboard',data:dashArr,borderColor:'#1B4F8A',borderWidth:2,pointBackgroundColor:'#1B4F8A',pointRadius:labels.map(m=>cum[m]?4:0),tension:0.2,fill:false,spanGaps:false,order:1},
     ]},
     options:{
@@ -893,25 +921,148 @@ function stepZoom(factor){
   var new_max = Math.min(data_max, center + new_half);
   charts.main.zoomScale('x', {min: new_min, max: new_max}, 'default');
 }
+let dxSplitMode=false;
+
 function toggleDx(){
-  showDx=!showDx;
+  dxSplitMode=!dxSplitMode;
   const btn=document.getElementById('dxBtn');
   const leg=document.getElementById('dxLegend');
   const panel=document.getElementById('dxPanel');
-  if(showDx){
+  const mainChart=document.getElementById('mainChart').parentElement;
+  const splitCharts=document.getElementById('splitCharts');
+  
+  if(dxSplitMode){
     btn.classList.add('on');
-    btn.textContent='Dx overlay on';
-    leg.style.display='flex';panel.style.display='block';
+    btn.textContent='Back to Single View';
+    mainChart.style.display='none';
+    splitCharts.style.display='grid';
+    leg.style.display='none';
+    panel.style.display='none';
+    renderDxSplitView();
   } else {
     btn.classList.remove('on');
     btn.textContent='Dx overlay';
-    leg.style.display='none';panel.style.display='none';
+    mainChart.style.display='block';
+    splitCharts.style.display='none';
+    leg.style.display='none';
+    panel.style.display='none';
+    renderDashboard();
   }
-  renderDashboard();
 }
 
-// ── FIGURES ────────────────────────────────────────
-function renderFigures(){renderFig2();renderFig3();renderFig4();}
+function renderDxSplitView(){
+  const cum=buildCum();
+  const months=Object.keys(cum).sort((a,b)=>mIdx(a)-mIdx(b));
+  if(!months.length)return;
+  
+  // Use only actual months with data
+  const labels=months;
+  const convRates={};
+  for(const[m,v] of Object.entries(cum)) if(v.convRate!=null) convRates[m]=v.convRate;
+  
+  // Overall data
+  const dashArr=labels.map(m=>cum[m]?.cumDashboard??null);
+  const compArr=labels.map(m=>cum[m]?.cumCompleted??null);
+  const activeArr=labels.map(m=>cum[m]?.cumActive??null);
+  
+  // Dx data (cumulative)
+  let dxDash=0,dxComp=0,dxActive=0;
+  const dxDashArr=labels.map(m=>{
+    if(cum[m])dxDash+=cum[m].rawDxDash||0;
+    return dxDash||null;
+  });
+  const dxCompArr=labels.map(m=>{
+    if(cum[m])dxComp+=cum[m].rawDxBL||0;
+    return dxComp||null;
+  });
+  const dxActiveArr=labels.map(m=>{
+    if(cum[m]){
+      const dxDashTotal=cum[m].cumDxDash||0;
+      const dxCompTotal=cum[m].cumDxBL||0;
+      const dxExpTotal=(cum[m].rawExpired||0)*(cum[m].rawDxDash||0)/(cum[m].rawDashboard||1);
+      dxActive=dxDashTotal-dxCompTotal-dxExpTotal;
+    }
+    return dxActive||null;
+  });
+  
+  // Non-Dx data (cumulative)
+  let noDxDash=0,noDxComp=0,noDxActive=0;
+  const noDxDashArr=labels.map(m=>{
+    if(cum[m]){
+      noDxDash+=(cum[m].rawDashboard||0)-(cum[m].rawDxDash||0);
+    }
+    return noDxDash||null;
+  });
+  const noDxCompArr=labels.map(m=>{
+    if(cum[m]){
+      noDxComp+=(cum[m].rawCompleted||0)-(cum[m].rawDxBL||0);
+    }
+    return noDxComp||null;
+  });
+  const noDxActiveArr=labels.map(m=>{
+    if(cum[m]){
+      const noDxDashTotal=(cum[m].rawDashboard||0)-(cum[m].rawDxDash||0);
+      const noDxCompTotal=(cum[m].rawCompleted||0)-(cum[m].rawDxBL||0);
+      const noDxExpTotal=(cum[m].rawExpired||0)*((cum[m].rawDashboard-cum[m].rawDxDash)/(cum[m].rawDashboard||1));
+      noDxActive=noDxDashTotal-noDxCompTotal-noDxExpTotal;
+    }
+    return noDxActive||null;
+  });
+  
+  // Find max value across all 3 to use shared scale
+  const allValues=[...dashArr,...dxDashArr,...noDxDashArr].filter(v=>v!=null);
+  const maxVal=Math.max(...allValues)*1.05;
+  
+  // Helper function to create a split chart with shared scale
+  function renderSplitChart(canvasId, dashData, compData, activeData) {
+    const ctx=document.getElementById(canvasId).getContext('2d');
+    if(charts[canvasId])charts[canvasId].destroy();
+    
+    const convPlugin={
+      id:'convLabels',
+      afterDatasetsDraw(chart){
+        const ctx=chart.ctx;
+        const dsIdx=chart.data.datasets.findIndex(d=>d.label==='BL Completed');
+        if(dsIdx<0)return;
+        chart.getDatasetMeta(dsIdx).data.forEach((pt,i)=>{
+          if(pt.x==null||pt.y==null)return;
+          const m=labels[i];
+          const r=convRates[m];
+          if(r==null)return;
+          ctx.save();
+          ctx.font='500 10px IBM Plex Mono,monospace';
+          ctx.fillStyle='#1A7A5E';
+          ctx.textAlign='center';
+          ctx.fillText(r+'% conv.',pt.x,pt.y-12);
+          ctx.restore();
+        });
+      }
+    };
+    
+    charts[canvasId]=new Chart(ctx,{
+      type:'line',
+      plugins:[convPlugin],
+      data:{labels,datasets:[
+        {label:'Active (shaded)',data:activeData.map((v,i)=>v!=null?compData[i]+v:null),borderColor:'rgba(0,0,0,0)',backgroundColor:'rgba(150,150,150,0.18)',borderWidth:0,pointRadius:0,tension:0.2,fill:'-1',order:3},
+        {label:'BL Completed',data:compData,borderColor:'#1A7A5E',backgroundColor:'transparent',borderWidth:2.5,pointBackgroundColor:'#1A7A5E',pointRadius:labels.map(m=>cum[m]?4:0),tension:0.2,fill:false,order:2},
+        {label:'Dashboard',data:dashData,borderColor:'#1B4F8A',backgroundColor:'transparent',borderWidth:2.5,pointBackgroundColor:'#1B4F8A',pointRadius:labels.map(m=>cum[m]?4:0),tension:0.2,fill:false,order:1}
+      ]},
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          y:{beginAtZero:true,max:maxVal,grid:{color:'rgba(0,0,0,0.05)'}},
+          x:{grid:{display:false}}
+        }
+      }
+    });
+  }
+  
+  renderSplitChart('splitOverall', dashArr, compArr, activeArr);
+  renderSplitChart('splitDx', dxDashArr, dxCompArr, dxActiveArr);
+  renderSplitChart('splitNoDx', noDxDashArr, noDxCompArr, noDxActiveArr);
+}
 
 function renderFig2(){
   const cum=buildCum();
@@ -922,59 +1073,82 @@ function renderFig2(){
   const ndxD=l.cumDashboard-dxD,ndxB=l.cumCompleted-dxB;
   const dxConv=pct(dxB,dxD),ndxConv=pct(ndxB,ndxD),allConv=pct(l.cumCompleted,l.cumDashboard);
   const diff=Math.abs(dxConv-ndxConv);
-  const maxH=160;
 
-  function pair(dash,bl,accent,label){
-    var blH=Math.round((bl/dash)*maxH);
-    var dropH=maxH-blH;
-    return '<div class="funnel-col">'+
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:'+accent+';margin-bottom:8px;">'+label+'</div>'+
-      '<div class="funnel-bars">'+
-        '<div class="funnel-bar-wrap">'+
-          '<div class="funnel-val" style="color:'+accent+'">'+dash+'</div>'+
-          '<div class="funnel-bar" style="height:'+maxH+'px;background:'+accent+';opacity:0.2;"></div>'+
-          '<div class="funnel-bar-label">Dashboard</div>'+
-        '</div>'+
-        '<div class="funnel-bar-wrap">'+
-          '<div class="funnel-val" style="color:var(--green)">'+bl+'</div>'+
-          '<div class="funnel-bar" style="height:'+blH+'px;background:var(--green);"></div>'+
-          '<div class="funnel-bar-label">Completed</div>'+
-        '</div>'+
-        '<div class="funnel-bar-wrap">'+
-          '<div class="funnel-val" style="color:var(--coral)">'+(dash-bl)+'</div>'+
-          '<div class="funnel-bar" style="height:'+dropH+'px;background:var(--coral);opacity:0.45;"></div>'+
-          '<div class="funnel-bar-label">Did not<br>complete*</div>'+
-        '</div>'+
-      '</div>'+
-      '<div class="funnel-rate-tag" style="color:'+accent+';">'+pct(bl,dash)+'% converted</div>'+
-    '</div>';
-  }
-
-  var test=twoPropZTest(dxB,dxD,ndxB,ndxD);
+  var test=chiSquaredTest(dxB,dxD,ndxB,ndxD);
   var sig=test.pValue<0.05;
   var iColor=!sig?'var(--ochre)':(dxConv<ndxConv?'var(--coral)':'var(--green)');
   var iBg=!sig?'var(--ochre-pale)':(dxConv<ndxConv?'var(--coral-pale)':'var(--green-pale)');
   var pStr=test.pValue<0.001?'p < 0.001':'p = '+test.pValue.toFixed(3);
-  var ciStr='95% CI ['+(test.ciLow*100).toFixed(1)+'%, '+(test.ciHigh*100).toFixed(1)+'%]';
   var iText=!sig
     ?'<strong>No statistically significant difference</strong> ('+dxConv+'% vs '+ndxConv+'%, '+pStr+'). The '+diff+'-point gap is consistent with chance given these sample sizes. Depression does not appear to be driving pre-baseline dropout.'
     :(dxConv<ndxConv
-      ?'<strong>Statistically significant lower conversion</strong> among Dx participants ('+dxConv+'% vs '+ndxConv+'%, '+pStr+', '+ciStr+'). This difference is unlikely to be due to chance.'
-      :'<strong>Statistically significant higher conversion</strong> among Dx participants ('+dxConv+'% vs '+ndxConv+'%, '+pStr+', '+ciStr+'). Depression is not suppressing baseline completion — if anything, the opposite.');
+      ?'<strong>Statistically significant lower conversion</strong> among Dx participants ('+dxConv+'% vs '+ndxConv+'%, '+pStr+'). This difference is unlikely to be due to chance.'
+      :'<strong>Statistically significant higher conversion</strong> among Dx participants ('+dxConv+'% vs '+ndxConv+'%, '+pStr+'). Depression is not suppressing baseline completion — if anything, the opposite.');
 
   document.getElementById('fig2').innerHTML=
-    '<div class="funnel-wrap">'+
-      pair(dxD,dxB,'var(--plum)','With Dx')+
-      '<div class="vs-label">vs</div>'+
-      pair(ndxD,ndxB,'var(--blue)','Without Dx')+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:1.5rem;">'+
+      '<div>'+
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--plum);margin-bottom:12px;font-weight:500;">With Dx</div>'+
+        '<div style="position:relative;width:100%;height:280px;"><canvas id="fig2DxChart"></canvas></div>'+
+        '<div style="text-align:center;margin-top:8px;font-size:11px;font-weight:500;color:var(--plum);font-family:\'IBM Plex Mono\',monospace;">'+dxConv+'% converted</div>'+
+      '</div>'+
+      '<div>'+
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--blue);margin-bottom:12px;font-weight:500;">Without Dx</div>'+
+        '<div style="position:relative;width:100%;height:280px;"><canvas id="fig2NoDxChart"></canvas></div>'+
+        '<div style="text-align:center;margin-top:8px;font-size:11px;font-weight:500;color:var(--blue);font-family:\'IBM Plex Mono\',monospace;">'+ndxConv+'% converted</div>'+
+      '</div>'+
     '</div>'+
-    '<div style="text-align:center;font-size:11px;color:var(--ink-3);font-family:\'IBM Plex Mono\',monospace;margin:6px 0 2px;">Overall Dashboard &rarr; BL conversion: '+allConv+'%</div>'+
-    '<div style="font-size:10px;color:var(--ink-3);text-align:center;margin-bottom:4px;">* "Did not complete" includes both expired participants and those still active in their BL window.</div>'+
+    '<div style="text-align:center;font-size:11px;color:var(--ink-3);font-family:\'IBM Plex Mono\',monospace;margin:12px 0 2px;">Overall Dashboard → BL conversion: '+allConv+'%</div>'+
     '<div class="insight" style="border-color:'+iColor+';background:'+iBg+';color:var(--ink);">'+iText+'</div>'+
     '<div style="font-size:10px;color:var(--ink-3);font-family:\'IBM Plex Mono\',monospace;line-height:1.7;margin-top:8px;padding:8px 10px;background:var(--paper);border:1px solid var(--rule);">'+
-      'Two-proportion z-test (pooled SE under H0: p1=p2). z = '+test.z.toFixed(2)+', '+pStr+'. '+
-      'Significance threshold: p &lt; 0.05. Dx: '+dxB+'/'+dxD+' = '+(test.p1*100).toFixed(1)+'%. Non-Dx: '+ndxB+'/'+ndxD+' = '+(test.p2*100).toFixed(1)+'%.'+
+      'Chi-squared test. χ² = '+test.chi2.toFixed(4)+', '+pStr+'. '+
+      'Significance threshold: p &lt; 0.05. Dx: '+dxB+'/'+dxD+' = '+dxConv+'%. Non-Dx: '+ndxB+'/'+ndxD+' = '+ndxConv+'%.'+
     '</div>';
+
+  if(charts.fig2Dx)charts.fig2Dx.destroy();
+  if(charts.fig2NoDx)charts.fig2NoDx.destroy();
+  
+  setTimeout(()=>{
+    const maxVal=Math.max(dxD,ndxD)*1.1;
+    
+    // Dx chart
+    charts.fig2Dx=new Chart(document.getElementById('fig2DxChart'),{
+      type:'bar',
+      data:{
+        labels:['Completed','Did not complete'],
+        datasets:[
+          {label:'Count',data:[dxB,dxD-dxB],backgroundColor:['#1A7A5E','#C4451E'],borderColor:['#1A7A5E','#C4451E'],borderWidth:0}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          y:{beginAtZero:true,max:maxVal,grid:{color:'rgba(0,0,0,0.05)'}},
+          x:{grid:{display:false}}
+        }
+      }
+    });
+    
+    // Non-Dx chart
+    charts.fig2NoDx=new Chart(document.getElementById('fig2NoDxChart'),{
+      type:'bar',
+      data:{
+        labels:['Completed','Did not complete'],
+        datasets:[
+          {label:'Count',data:[ndxB,ndxD-ndxB],backgroundColor:['rgba(26,122,94,0.6)','rgba(196,69,30,0.4)'],borderColor:['#1A7A5E','#C4451E'],borderWidth:0}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          y:{beginAtZero:true,max:maxVal,grid:{color:'rgba(0,0,0,0.05)'}},
+          x:{grid:{display:false}}
+        }
+      }
+    });
+  },50);
 }
 
 function renderFig3(){
@@ -1000,17 +1174,16 @@ function renderFig3(){
   var expDx=expiredDxVal,expNdx=totalExp-expDx;
   var dxR=pct(expDx,totalDxD),ndxR=pct(expNdx,totalNdxD);
   var diff=Math.abs(dxR-ndxR);
-  var test=twoPropZTest(expDx,totalDxD,expNdx,totalNdxD);
+  var test=chiSquaredTest(expDx,totalDxD,expNdx,totalNdxD);
   var sig=test.pValue<0.05;
   var pStr=test.pValue<0.001?'p < 0.001':'p = '+test.pValue.toFixed(3);
-  var ciStr='95% CI ['+(test.ciLow*100).toFixed(1)+'%, '+(test.ciHigh*100).toFixed(1)+'%]';
   var iColor=!sig?'var(--ochre)':(dxR>ndxR?'var(--coral)':'var(--green)');
   var iBg=!sig?'var(--ochre-pale)':(dxR>ndxR?'var(--coral-pale)':'var(--green-pale)');
   var iText=!sig
     ?'<strong>No statistically significant difference</strong> ('+dxR+'% vs '+ndxR+'%, '+pStr+'). The '+diff+'-point gap is consistent with chance given these sample sizes. Depression does not appear to be a primary expiry driver.'
     :(dxR>ndxR
-      ?'<strong>Statistically significant higher expiry rate</strong> among Dx participants ('+dxR+'% vs '+ndxR+'%, '+pStr+', '+ciStr+'). Depression may be contributing to post-Dashboard disengagement.'
-      :'<strong>Statistically significant higher expiry rate</strong> among non-Dx participants ('+ndxR+'% vs '+dxR+'%, '+pStr+', '+ciStr+'). Depression is not the primary expiry driver.');
+      ?'<strong>Statistically significant higher expiry rate</strong> among Dx participants ('+dxR+'% vs '+ndxR+'%, '+pStr+'). Depression may be contributing to post-Dashboard disengagement.'
+      :'<strong>Statistically significant higher expiry rate</strong> among non-Dx participants ('+ndxR+'% vs '+dxR+'%, '+pStr+'). Depression is not the primary expiry driver.');
 
   function bar(label,n,total,rate,color){
     return '<div style="margin-bottom:1.25rem;">'+
@@ -1033,8 +1206,8 @@ function renderFig3(){
         ' <button onclick="resetExpDx()" style="background:none;border:none;color:var(--ink-3);font-size:10px;cursor:pointer;text-decoration:underline;margin-left:8px;font-family:\'IBM Plex Mono\',monospace;">reset</button>'+
       '</div>'+
       '<div style="font-size:10px;color:var(--ink-3);font-family:\'IBM Plex Mono\',monospace;line-height:1.7;margin-top:8px;padding:8px 10px;background:var(--paper);border:1px solid var(--rule);">'+
-        'Two-proportion z-test (pooled SE under H0: p1=p2). z = '+test.z.toFixed(2)+', '+pStr+'. '+
-        'Significance threshold: p &lt; 0.05. Dx: '+expDx+'/'+totalDxD+' = '+(test.p1*100).toFixed(1)+'%. Non-Dx: '+expNdx+'/'+totalNdxD+' = '+(test.p2*100).toFixed(1)+'%.'+
+        'Chi-squared test. χ² = '+test.chi2.toFixed(4)+', '+pStr+'. '+
+        'Significance threshold: p &lt; 0.05. Dx: '+expDx+'/'+totalDxD+' = '+dxR+'%. Non-Dx: '+expNdx+'/'+totalNdxD+' = '+ndxR+'%.'+
       '</div>'+
     '</div>';
 }
