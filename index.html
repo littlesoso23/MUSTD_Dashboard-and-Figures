@@ -635,6 +635,27 @@ body {
 
   <div class="data-section">
     <div class="data-section-header">
+      <h3>Add a month from cumulative (aggregate) totals</h3>
+    </div>
+    <div style="padding:0.5rem 1.5rem 0;font-size:11px;color:var(--ink-2);line-height:1.6;max-width:80ch;">
+      Enter the running <strong>all-time totals</strong> (e.g. the aggregate numbers reported through this month). The dashboard subtracts the prior cumulative total to back-calculate this month's values automatically — no manual math needed. <strong>Depression Dx</strong> here means participants with a depression diagnosis (assessed at baseline, so this maps to Dx among BL completed). Leave <strong>Aggregate Dx Dashboard</strong> blank if you don't have it — the pipeline still updates, and the Dx comparison figures stay on their last complete-data month.
+    </div>
+    <div class="input-grid" style="grid-template-columns:repeat(5,1fr) auto;">
+      <div class="input-col"><label>Month</label><input type="text" id="agg-month" placeholder="Jun-26"></div>
+      <div class="input-col"><label>Aggregate Dashboard</label><input type="number" id="agg-dashboard" placeholder="—"></div>
+      <div class="input-col"><label>Aggregate BL Completed</label><input type="number" id="agg-completed" placeholder="—"></div>
+      <div class="input-col"><label>Aggregate BL Expired</label><input type="number" id="agg-expired" placeholder="—"></div>
+      <div class="input-col"><label>Aggregate Depression Dx</label><input type="number" id="agg-dxBL" placeholder="—"></div>
+      <div class="input-col" style="display:flex;align-items:flex-end;"><button class="btn-add" onclick="addFromAggregate()">Add</button></div>
+    </div>
+    <div class="input-grid" style="grid-template-columns:1fr;padding-top:0;">
+      <div class="input-col"><label>Aggregate Dx Dashboard (optional)</label><input type="number" id="agg-dxDash" placeholder="leave blank if unavailable" style="max-width:280px;"></div>
+    </div>
+    <div id="aggPreview" style="padding:0 1.5rem 1.25rem;font-size:11px;color:var(--ink-3);font-family:'IBM Plex Mono',monospace;"></div>
+  </div>
+
+  <div class="data-section">
+    <div class="data-section-header">
       <h3>Complete data table</h3>
       <button class="btn-ghost" onclick="resetData()">Reset to defaults</button>
     </div>
@@ -965,15 +986,17 @@ function renderDxSplitView(){
   const compArr=labels.map(m=>cum[m]?.cumCompleted??null);
   const activeArr=labels.map(m=>cum[m]?.cumActive??null);
   
-  // Dx data (cumulative)
+  // Dx data (cumulative). Months without a Dx-at-Dashboard value (e.g. an
+  // aggregate June entry with dxDash left blank) return null so the Dx line
+  // stops there instead of implying a Dx split we don't actually have.
   let dxDash=0,dxComp=0,dxActive=0;
   const dxDashArr=labels.map(m=>{
     if(cum[m])dxDash+=cum[m].rawDxDash||0;
-    return dxDash||null;
+    return cum[m]&&cum[m].rawDxDash!=null ? (dxDash||null) : null;
   });
   const dxCompArr=labels.map(m=>{
     if(cum[m])dxComp+=cum[m].rawDxBL||0;
-    return dxComp||null;
+    return cum[m]&&cum[m].rawDxDash!=null ? (dxComp||null) : null;
   });
   const dxActiveArr=labels.map(m=>{
     if(cum[m]){
@@ -982,22 +1005,23 @@ function renderDxSplitView(){
       const dxExpTotal=(cum[m].rawExpired||0)*(cum[m].rawDxDash||0)/(cum[m].rawDashboard||1);
       dxActive=dxDashTotal-dxCompTotal-dxExpTotal;
     }
-    return dxActive||null;
+    return cum[m]&&cum[m].rawDxDash!=null ? (dxActive||null) : null;
   });
   
-  // Non-Dx data (cumulative)
+  // Non-Dx data (cumulative). Same rule — without Dx-at-Dashboard we can't
+  // derive the non-Dx split, so the line stops at the last complete month.
   let noDxDash=0,noDxComp=0,noDxActive=0;
   const noDxDashArr=labels.map(m=>{
     if(cum[m]){
       noDxDash+=(cum[m].rawDashboard||0)-(cum[m].rawDxDash||0);
     }
-    return noDxDash||null;
+    return cum[m]&&cum[m].rawDxDash!=null ? (noDxDash||null) : null;
   });
   const noDxCompArr=labels.map(m=>{
     if(cum[m]){
       noDxComp+=(cum[m].rawCompleted||0)-(cum[m].rawDxBL||0);
     }
-    return noDxComp||null;
+    return cum[m]&&cum[m].rawDxDash!=null ? (noDxComp||null) : null;
   });
   const noDxActiveArr=labels.map(m=>{
     if(cum[m]){
@@ -1006,7 +1030,7 @@ function renderDxSplitView(){
       const noDxExpTotal=(cum[m].rawExpired||0)*((cum[m].rawDashboard-cum[m].rawDxDash)/(cum[m].rawDashboard||1));
       noDxActive=noDxDashTotal-noDxCompTotal-noDxExpTotal;
     }
-    return noDxActive||null;
+    return cum[m]&&cum[m].rawDxDash!=null ? (noDxActive||null) : null;
   });
   
   // Find max value across all 3 to use shared scale
@@ -1068,10 +1092,19 @@ function renderFig2(){
   const cum=buildCum();
   const months=Object.keys(cum).sort((a,b)=>mIdx(a)-mIdx(b));
   if(!months.length)return;
-  const l=cum[months[months.length-1]];
+  // For the Dx comparison we need BOTH Dx-at-dashboard and Dx-completed to be
+  // consistent (same month). If the latest month has no Dx Dashboard value
+  // (e.g. an aggregate June entry where dxDash was left blank), fall back to the
+  // most recent month that DOES have complete Dx data so numerator and
+  // denominator stay aligned and the conversion can't exceed 100%.
+  const dxMonths=months.filter(mm=>cum[mm].rawDxDash!=null);
+  const latestFull=months[months.length-1];
+  const dxAnchor=dxMonths.length?dxMonths[dxMonths.length-1]:latestFull;
+  const dxStale=(dxAnchor!==latestFull);
+  const l=cum[dxAnchor];
   const dxD=l.cumDxDash,dxB=l.cumDxBL;
   const ndxD=l.cumDashboard-dxD,ndxB=l.cumCompleted-dxB;
-  const dxConv=pct(dxB,dxD),ndxConv=pct(ndxB,ndxD),allConv=pct(l.cumCompleted,l.cumDashboard);
+  const dxConv=pct(dxB,dxD),ndxConv=pct(ndxB,ndxD),allConv=pct(cum[latestFull].cumCompleted,cum[latestFull].cumDashboard);
   const diff=Math.abs(dxConv-ndxConv);
 
   var test=chiSquaredTest(dxB,dxD,ndxB,ndxD);
@@ -1099,6 +1132,7 @@ function renderFig2(){
       '</div>'+
     '</div>'+
     '<div style="text-align:center;font-size:11px;color:var(--ink-3);font-family:\'IBM Plex Mono\',monospace;margin:12px 0 2px;">Overall Dashboard → BL conversion: '+allConv+'%</div>'+
+    (dxStale?'<div style="text-align:center;font-size:10px;color:var(--ochre);font-family:\'IBM Plex Mono\',monospace;margin:2px 0 8px;">Dx comparison shown through '+dxAnchor+' (latest month with Dx-at-Dashboard data). Overall conversion above reflects '+latestFull+'.</div>':'')+
     '<div class="insight" style="border-color:'+iColor+';background:'+iBg+';color:var(--ink);">'+iText+'</div>'+
     '<div style="font-size:10px;color:var(--ink-3);font-family:\'IBM Plex Mono\',monospace;line-height:1.7;margin-top:8px;padding:8px 10px;background:var(--paper);border:1px solid var(--rule);">'+
       'Chi-squared test. χ² = '+test.chi2.toFixed(4)+', '+pStr+'. '+
@@ -1283,6 +1317,71 @@ function addRow(){
 }
 function deleteRow(m){rawData=rawData.filter(d=>d.month!==m);renderDataTable();}
 function resetData(){rawData=JSON.parse(JSON.stringify(DEFAULT_DATA));renderDataTable();}
+
+// Add a month by entering CUMULATIVE (aggregate) all-time totals.
+// The function subtracts the cumulative total of all PRIOR months to
+// back-calculate this month's monthly values, then stores them as a normal row.
+// Dx Dashboard is optional — if left blank, dxDash is stored as null so the
+// pipeline updates but the Dx-comparison figures fall back to the last month
+// that has complete Dx data.
+function addFromAggregate(){
+  var m=document.getElementById('agg-month').value.trim();
+  if(!m){alert('Month is required.');return;}
+  if(mIdx(m)<0){alert('Month "'+m+'" is not recognized. Use the format Jun-26 (must match the timeline).');return;}
+
+  var aggDash=num(document.getElementById('agg-dashboard').value);
+  var aggComp=num(document.getElementById('agg-completed').value);
+  var aggExp=num(document.getElementById('agg-expired').value);
+  var aggDxBL=num(document.getElementById('agg-dxBL').value);
+  var aggDxDash=num(document.getElementById('agg-dxDash').value);
+
+  // Sum cumulative totals of all months strictly BEFORE this one (excluding any
+  // existing row for this same month, so re-entry overwrites cleanly).
+  var prior={dashboard:0,completed:0,expired:0,dxBL:0,dxDash:0};
+  rawData.filter(d=>d.month!==m && mIdx(d.month)<mIdx(m)).forEach(function(d){
+    prior.dashboard+=d.dashboard||0;
+    prior.completed+=d.completed||0;
+    prior.expired+=d.expired||0;
+    prior.dxBL+=d.dxBL||0;
+    prior.dxDash+=d.dxDash||0;
+  });
+
+  // Monthly value = aggregate total − prior cumulative
+  var row={
+    month:m,
+    registry:null,
+    dashboard: aggDash!=null ? aggDash-prior.dashboard : null,
+    completed: aggComp!=null ? aggComp-prior.completed : null,
+    expired:   aggExp!=null ? aggExp-prior.expired : null,
+    dxBL:      aggDxBL!=null ? aggDxBL-prior.dxBL : null,
+    dxDash:    aggDxDash!=null ? aggDxDash-prior.dxDash : null
+  };
+
+  // Guard: negative deltas mean the aggregate is smaller than what's already
+  // recorded — almost always a data-entry error. Warn before committing.
+  var negs=[];
+  if(row.dashboard!=null && row.dashboard<0) negs.push('Dashboard');
+  if(row.completed!=null && row.completed<0) negs.push('BL Completed');
+  if(row.expired!=null && row.expired<0) negs.push('BL Expired');
+  if(row.dxBL!=null && row.dxBL<0) negs.push('Depression Dx');
+  if(row.dxDash!=null && row.dxDash<0) negs.push('Dx Dashboard');
+  if(negs.length){
+    if(!confirm('Warning: the aggregate you entered is LOWER than the running total already recorded for '+negs.join(', ')+'. That produces a negative monthly value, which usually means a typo. Add anyway?')) return;
+  }
+
+  var idx=rawData.findIndex(d=>d.month===m);
+  if(idx>=0)rawData[idx]=row;else rawData.push(row);
+
+  ['agg-month','agg-dashboard','agg-completed','agg-expired','agg-dxBL','agg-dxDash'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('aggPreview').innerHTML=
+    'Added '+m+' → this month: Dashboard '+(row.dashboard??'—')+
+    ' · Completed '+(row.completed??'—')+
+    ' · Expired '+(row.expired??'—')+
+    ' · Dx BL '+(row.dxBL??'—')+
+    ' · Dx Dashboard '+(row.dxDash??'(blank)')+
+    '  (back-calculated from your aggregate totals)';
+  renderDataTable();
+}
 
 renderDashboard();
 </script>
