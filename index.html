@@ -568,7 +568,7 @@ body {
     <span class="mpill">Active = Dashboard &minus; BL Completed &minus; BL Expired</span>
     <span class="mpill">Conv. rate = BL Completed &divide; Dashboard</span>
     <span class="mpill">Expiry rate = BL Expired &divide; Dashboard</span><br>
-    Cumulative May-26: 491 Dashboard &middot; 309 completed (63%) &middot; 116 expired (24%) &middot; 66 active (13%) &middot; 309+116+66 = 491 &check;
+    Cumulative Jun-26: 649 Dashboard &middot; 406 completed (63%) &middot; 173 expired (27%) &middot; 70 active (11%) &middot; 406+173+70 = 649 &check;
   </div>
 
   <!-- Figure 2 -->
@@ -588,8 +588,8 @@ body {
     <div class="math-block">
       <strong>Calculations</strong><br>
       <span class="mpill">Monthly expiry rate = expired &divide; Dashboard entrants that month &times; 100</span><br>
-      Feb: 37 &divide; 123 = 30% &middot; Mar: 32 &divide; 93 = 34% &middot; Apr: 17 &divide; 135 = 13%<br>
-      The rate declined sharply in April despite higher enrollment — a meaningful retention improvement.
+      Feb: 37 &divide; 123 = 30% &middot; Mar: 32 &divide; 93 = 34% &middot; Apr: 43 &divide; 135 = 32% &middot; May: 41 &divide; 140 = 29% &middot; Jun: 20 &divide; 158 = 13%<br>
+      June's rate dropped sharply, but note that many June entrants are likely still inside their BL window — expect this number to rise as windows close.
     </div>
   </div>
 
@@ -641,7 +641,7 @@ body {
       Enter the running <strong>all-time totals</strong> (e.g. the aggregate numbers reported through this month). The dashboard subtracts the prior cumulative total to back-calculate this month's values automatically — no manual math needed. <strong>Depression Dx</strong> here means participants with a depression diagnosis (assessed at baseline, so this maps to Dx among BL completed). Leave <strong>Aggregate Dx Dashboard</strong> blank if you don't have it — the pipeline still updates, and the Dx comparison figures stay on their last complete-data month.
     </div>
     <div class="input-grid" style="grid-template-columns:repeat(5,1fr) auto;">
-      <div class="input-col"><label>Month</label><input type="text" id="agg-month" placeholder="Jun-26"></div>
+      <div class="input-col"><label>Month</label><input type="text" id="agg-month" placeholder="Jul-26"></div>
       <div class="input-col"><label>Aggregate Dashboard</label><input type="number" id="agg-dashboard" placeholder="—"></div>
       <div class="input-col"><label>Aggregate BL Completed</label><input type="number" id="agg-completed" placeholder="—"></div>
       <div class="input-col"><label>Aggregate BL Expired</label><input type="number" id="agg-expired" placeholder="—"></div>
@@ -674,7 +674,8 @@ const DEFAULT_DATA=[
   {month:'Feb-26', registry:494,  dashboard:123, completed:71,  expired:37,  dxDash:24, dxBL:16},
   {month:'Mar-26', registry:333,  dashboard:93,  completed:61,  expired:32,  dxDash:22, dxBL:12},
   {month:'Apr-26', registry:540,  dashboard:135, completed:96,  expired:43,  dxDash:37, dxBL:26},
-  {month:'May-26', registry:479,  dashboard:140, completed:81,  expired:4,   dxDash:50, dxBL:34},
+  {month:'May-26', registry:479,  dashboard:140, completed:83,  expired:41,  dxDash:46, dxBL:34},
+  {month:'Jun-26', registry:774,  dashboard:158, completed:95,  expired:20,  dxDash:93, dxBL:49},
 ];
 let rawData=JSON.parse(JSON.stringify(DEFAULT_DATA));
 let showDx=false;
@@ -1249,7 +1250,7 @@ function renderFig3(){
 function submitExpDx(){
   var v=parseInt(document.getElementById('expDxIn').value);
   var cum=buildCum();var months=Object.keys(cum);
-  var maxV=cum[months[months.length-1]]?.cumExpired||86;
+  var maxV=cum[months[months.length-1]]?.cumExpired||173;
   if(isNaN(v)||v<0||v>maxV){alert('Enter a number between 0 and '+maxV);return;}
   expiredDxVal=v;renderFig3();
 }
