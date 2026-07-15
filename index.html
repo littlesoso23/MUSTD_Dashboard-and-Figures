@@ -583,13 +583,15 @@ body {
   <div class="fig-card">
     <div class="section-label">Figure 4</div>
     <div class="section-heading">Monthly expiry trend</div>
-    <div class="section-sub">Raw expired count per month (bars) and expiry rate as a percentage of that month's Dashboard entrants (line). A declining line indicates improving retention.</div>
-    <div style="position:relative;width:100%;height:280px;"><canvas id="fig4chart"></canvas></div>
+    <div class="section-sub">Raw expired count per month (bars), the naive expiry rate against that month's Dashboard entrants (slate line), and a cohort-adjusted rate that accounts for the ~3-week BL window (dashed plum line). Because the window spans a month boundary, most people expiring in a given month actually entered the month before.</div>
+    <div style="position:relative;width:100%;height:300px;"><canvas id="fig4chart"></canvas></div>
     <div class="math-block">
       <strong>Calculations</strong><br>
-      <span class="mpill">Monthly expiry rate = expired &divide; Dashboard entrants that month &times; 100</span><br>
-      Feb: 37 &divide; 123 = 30% &middot; Mar: 32 &divide; 93 = 34% &middot; Apr: 43 &divide; 135 = 32% &middot; May: 41 &divide; 140 = 29% &middot; Jun: 20 &divide; 158 = 13%<br>
-      June's rate dropped sharply, but note that many June entrants are likely still inside their BL window — expect this number to rise as windows close.
+      <span class="mpill">Naive rate = expired &divide; Dashboard entrants that month</span>
+      <span class="mpill">Cohort-adjusted rate = expired &divide; (0.7 &times; prior-month Dashboard + 0.3 &times; this-month Dashboard)</span><br>
+      <strong>Why the adjustment:</strong> with a ~21-day window, only entrants from the first ~9 days of a month can expire within that same month, so roughly 70% of a cohort's expirations land in the following calendar month (assuming uniform within-month entry). The naive rate divides one cohort's expirations by a different cohort's size.<br>
+      Adjusted: Mar 32 &divide; 114 = 28% &middot; Apr 43 &divide; 106 = 41% &middot; May 41 &divide; 137 = 30% &middot; Jun 20 &divide; 145 = 14%. (Feb omitted — no prior-month cohort in the data.)<br>
+      <strong>Censoring caveat:</strong> the latest month is right-censored under either rate — most of its entrants are still inside their window, so its expiry count will rise as windows close. The same lag applies (more mildly) to conversion: a month's completions partly come from the prior month's entrants.
     </div>
   </div>
 
@@ -1259,18 +1261,39 @@ function resetExpDx(){expiredDxVal=null;renderFig3();}
 function renderFig4(){
   const cum=buildCum();
   const months=Object.keys(cum).sort((a,b)=>mIdx(a)-mIdx(b));
+  // ── Cohort-adjusted expiry rate for a ~21-day BL window ──
+  // An entrant can only expire in the SAME calendar month if they arrived in
+  // the first ~9 days of a 30-day month (day d + 21 ≤ month end). Assuming
+  // roughly uniform within-month entry, ~70% of a cohort's expirations land in
+  // the FOLLOWING calendar month. So the people expiring in month M are mostly
+  // month M−1's entrants:
+  //   expected resolvers in M ≈ 0.7·Dashboard(M−1) + 0.3·Dashboard(M)
+  // Adjusted rate = expired(M) ÷ that blended denominator. First month in the
+  // data has no observed prior cohort, so its adjusted rate is omitted.
+  const W=0.7; // fraction of a 21-day window that spills into the next month
+  const adjRate=months.map((m,i)=>{
+    if(i===0)return null;
+    const prevD=cum[months[i-1]].rawDashboard||0;
+    const curD=cum[m].rawDashboard||0;
+    const denom=W*prevD+(1-W)*curD;
+    return denom>0?Math.round((cum[m].rawExpired||0)/denom*100):null;
+  });
   if(charts.fig4)charts.fig4.destroy();
   charts.fig4=new Chart(document.getElementById('fig4chart'),{
     type:'bar',
     data:{labels:months,datasets:[
       {label:'Expired',data:months.map(m=>cum[m].rawExpired),backgroundColor:'rgba(196,69,30,0.55)',borderColor:'#C4451E',borderWidth:1,borderRadius:0,yAxisID:'y',order:2},
-      {label:'Expiry rate %',data:months.map(m=>pct(cum[m].rawExpired,cum[m].rawDashboard)),type:'line',borderColor:'#3D4F6B',borderWidth:2,pointBackgroundColor:'#3D4F6B',pointRadius:4,tension:0.2,fill:false,yAxisID:'y2',order:1}
+      {label:'Expiry rate %',data:months.map(m=>pct(cum[m].rawExpired,cum[m].rawDashboard)),type:'line',borderColor:'#3D4F6B',borderWidth:2,pointBackgroundColor:'#3D4F6B',pointRadius:4,tension:0.2,fill:false,yAxisID:'y2',order:1},
+      {label:'Cohort-adjusted rate %',data:adjRate,type:'line',borderColor:'#5B2D6E',borderDash:[6,3],borderWidth:2,pointBackgroundColor:'#5B2D6E',pointRadius:4,tension:0.2,fill:false,yAxisID:'y2',order:0}
     ]},
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){
+      plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:14,font:{family:'IBM Plex Mono',size:10},color:'#8A8A84'}},tooltip:{callbacks:{label:function(c){
+        const isLast=c.dataIndex===months.length-1;
+        if(c.dataset.label==='Cohort-adjusted rate %')
+          return ' Cohort-adjusted expiry: '+c.parsed.y+'% (denominator = 0.7×prior-month + 0.3×this-month Dashboard)'+(isLast?' — provisional, window still open for most of this cohort':'');
         return c.dataset.yAxisID==='y2'
-          ?' Expiry rate: '+c.parsed.y+'% of that month\'s Dashboard entrants'
+          ?' Expiry rate: '+c.parsed.y+'% of that month\'s Dashboard entrants'+(isLast?' — provisional':'')
           :' Expired: '+c.parsed.y;
       }}}},
       scales:{
