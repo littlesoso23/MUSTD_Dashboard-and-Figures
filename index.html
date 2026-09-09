@@ -812,7 +812,8 @@ function renderMainChart(cum,months){
   // The expired marker line sits at cumCompleted + cumExpired for each month
   // This line divides the "not completed" gap into expired (below) and active (above)
   const expMarkerArr=labels.map(m=>cum[m]!=null?(cum[m].cumCompleted+cum[m].cumExpired):null);
-  const goalArr=ALL_MONTHS.map((_,i)=>Math.round((i/(ALL_MONTHS.length-1))*ANNUAL_GOAL));
+  const augIdx = ALL_MONTHS.indexOf("Aug-26");
+  const goalArr = ALL_MONTHS.map((_,i)=> i<=augIdx ? Math.round((i/augIdx)*ANNUAL_GOAL) : ANNUAL_GOAL );
   // Dx raw counts (for tooltip + bands)
   const dxDashArr=labels.map(m=>cum[m]?.cumDxDash??null);
   const dxBLArr=labels.map(m=>cum[m]?.cumDxBL??null);
