@@ -558,7 +558,7 @@ body {
         <div style="position:relative;width:100%;height:320px;"><canvas id="splitNoDx"></canvas></div>
       </div>
     </div>
-    <div class="calc"><div class="calc-row"><span class="calc-k">Active</span><span class="calc-v">Dashboard &minus; BL completed &minus; BL expired</span></div><div class="calc-row"><span class="calc-k">Conversion rate</span><span class="calc-v">BL completed &divide; Dashboard</span></div><div class="calc-row"><span class="calc-k">Expiry rate</span><span class="calc-v">BL expired &divide; Dashboard</span></div><div class="calc-row"><span class="calc-k">Shading</span><span class="calc-v calc-plain">gray = still active; unshaded = expired</span></div></div>
+    <div class="calc"><div class="calc-row"><span class="calc-k">Active</span><span class="calc-v">Dashboard &minus; BL completed &minus; BL expired</span></div><div class="calc-row"><span class="calc-k">Completion rate</span><span class="calc-v">BL completed &divide; Dashboard</span></div><div class="calc-row"><span class="calc-k">Expiry rate</span><span class="calc-v">BL expired &divide; Dashboard</span></div><div class="calc-row"><span class="calc-k">Shading</span><span class="calc-v calc-plain">gray = still active; unshaded = expired</span></div></div>
   </div>
 
 
@@ -658,7 +658,7 @@ const mIdx=m=>ALL_MONTHS.indexOf(m);
 const pct=(a,b)=>b>0?Math.round(a/b*100):null;
 
 // Two-proportion z-test (pooled). Tests whether two observed proportions
-// (e.g. Dx conversion rate vs non-Dx conversion rate) differ by more than
+// (e.g. Dx completion rate vs non-Dx completion rate) differ by more than
 // chance, given their sample sizes. Returns z, p (two-tailed), and a 95% CI
 // for the difference in proportions.
 // Standard normal CDF via Abramowitz-Stegun erf approximation
@@ -825,7 +825,7 @@ function renderMainChart(cum,months){
     if(i===latestMIdx)return latestComp;
     return Math.min(latestComp+r3*(i-latestMIdx),ANNUAL_GOAL+400);
   });
-  // label on each green point = running conversion (completed so far ÷ Dashboard so far),
+  // label on each green point = running completion rate (completed so far ÷ Dashboard so far),
   // so the number describes the same cumulative totals the line shows
   const convRates={};
   for(const[m,v] of Object.entries(cum)){const r=pct(v.cumCompleted,v.cumDashboard);if(r!=null)convRates[m]=r;}
@@ -838,9 +838,9 @@ function renderMainChart(cum,months){
       if(dsIdx<0)return;
       chart.getDatasetMeta(dsIdx).data.forEach((pt,i)=>{
         const m=ALL_MONTHS[i];const r=convRates[m];if(r==null)return;
-        // Overall conv rate — above the point
+        // Overall completion rate — above the point
         ctx.save();ctx.font='500 10px IBM Plex Mono,monospace';ctx.fillStyle='#1A7A5E';
-        ctx.textAlign='center';ctx.fillText(r+'% conv.',pt.x,pt.y-14);ctx.restore();
+        ctx.textAlign='center';ctx.fillText(r+'% completed',pt.x,pt.y-14);ctx.restore();
       });
     }
   };
@@ -978,13 +978,13 @@ function renderDxSplitView(){
         if(dsIdx<0)return;
         chart.getDatasetMeta(dsIdx).data.forEach((pt,i)=>{
           if(pt.x==null||pt.y==null)return;
-          const r=pct(compData[i],dashData[i]);   // this panel's own running conversion
+          const r=pct(compData[i],dashData[i]);   // this panel's own running completion rate
           if(r==null)return;
           ctx.save();
           ctx.font='500 10px IBM Plex Mono,monospace';
           ctx.fillStyle='#1A7A5E';
           ctx.textAlign='center';
-          ctx.fillText(r+'% conv.',pt.x,pt.y-12);
+          ctx.fillText(r+'%',pt.x,pt.y-12);   // just the % here: the small panels have no room for a word
           ctx.restore();
         });
       }
@@ -1023,7 +1023,7 @@ function renderFig2(){
   // consistent (same month). If the latest month has no Dx Dashboard value
   // (e.g. an aggregate June entry where dxDash was left blank), fall back to the
   // most recent month that DOES have complete Dx data so numerator and
-  // denominator stay aligned and the conversion can't exceed 100%.
+  // denominator stay aligned and the completion rate can't exceed 100%.
   const latestFull=months[months.length-1];
   const dxAnchor=dxCutoff(rawData);
   if(!dxAnchor||!cum[dxAnchor]){
@@ -1047,25 +1047,25 @@ function renderFig2(){
     :!sig
     ?'<strong>No statistically significant difference</strong> ('+dxConv+'% vs '+ndxConv+'%, '+pStr+'). The '+diff+'-point gap is consistent with chance given these sample sizes. Depression does not appear to be driving pre-baseline dropout.'
     :(dxConv<ndxConv
-      ?'<strong>Statistically significant lower conversion</strong> among Dx participants ('+dxConv+'% vs '+ndxConv+'%, '+pStr+'). This difference is unlikely to be due to chance.'
-      :'<strong>Statistically significant higher conversion</strong> among Dx participants ('+dxConv+'% vs '+ndxConv+'%, '+pStr+'). Depression is not suppressing baseline completion — if anything, the opposite.');
+      ?'<strong>Statistically significant lower completion</strong> among Dx participants ('+dxConv+'% vs '+ndxConv+'%, '+pStr+'). This difference is unlikely to be due to chance.'
+      :'<strong>Statistically significant higher completion</strong> among Dx participants ('+dxConv+'% vs '+ndxConv+'%, '+pStr+'). Depression is not suppressing baseline completion — if anything, the opposite.');
 
   document.getElementById('fig2').innerHTML=
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:1.5rem;">'+
       '<div>'+
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--plum);margin-bottom:12px;font-weight:500;">With Dx</div>'+
         '<div style="position:relative;width:100%;height:280px;"><canvas id="fig2DxChart"></canvas></div>'+
-        '<div style="text-align:center;margin-top:8px;font-size:11px;font-weight:500;color:var(--plum);font-family:\'IBM Plex Mono\',monospace;">'+dxConv+'% converted</div>'+
+        '<div style="text-align:center;margin-top:8px;font-size:11px;font-weight:500;color:var(--plum);font-family:\'IBM Plex Mono\',monospace;">'+dxConv+'% completed</div>'+
       '</div>'+
       '<div>'+
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--blue);margin-bottom:12px;font-weight:500;">Without Dx</div>'+
         '<div style="position:relative;width:100%;height:280px;"><canvas id="fig2NoDxChart"></canvas></div>'+
-        '<div style="text-align:center;margin-top:8px;font-size:11px;font-weight:500;color:var(--blue);font-family:\'IBM Plex Mono\',monospace;">'+ndxConv+'% converted</div>'+
+        '<div style="text-align:center;margin-top:8px;font-size:11px;font-weight:500;color:var(--blue);font-family:\'IBM Plex Mono\',monospace;">'+ndxConv+'% completed</div>'+
       '</div>'+
     '</div>'+
     (dxStale?'<div style="text-align:center;font-size:10px;color:var(--ochre);font-family:\'IBM Plex Mono\',monospace;margin:2px 0 8px;">Dx comparison shown through '+dxAnchor+' (the month before the first blank Dx Dashboard).</div>':'')+
     '<div class="insight" style="border-color:'+iColor+';background:'+iBg+';color:var(--ink);">'+iText+'</div>'+
-    '<div class="calc"><div class="calc-row"><span class="calc-k">Dx conversion</span><span class="calc-v">Dx BL completed &divide; Dx at Dashboard</span></div><div class="calc-row"><span class="calc-k">Non-Dx conversion</span><span class="calc-v">non-Dx BL completed &divide; non-Dx at Dashboard</span></div><div class="calc-row"><span class="calc-k">Difference test</span><span class="calc-v calc-plain">Chi-squared test; &ldquo;significant&rdquo; if p &lt; 0.05</span></div></div>';
+    '<div class="calc"><div class="calc-row"><span class="calc-k">Dx completion</span><span class="calc-v">Dx BL completed &divide; Dx at Dashboard</span></div><div class="calc-row"><span class="calc-k">Non-Dx completion</span><span class="calc-v">non-Dx BL completed &divide; non-Dx at Dashboard</span></div><div class="calc-row"><span class="calc-k">Difference test</span><span class="calc-v calc-plain">Chi-squared test; &ldquo;significant&rdquo; if p &lt; 0.05</span></div></div>';
 
   if(charts.fig2Dx)charts.fig2Dx.destroy();
   if(charts.fig2NoDx)charts.fig2NoDx.destroy();
@@ -1173,7 +1173,7 @@ function renderDataTable(){
   const sorted=[...rawData].sort((a,b)=>mIdx(a.month)-mIdx(b.month));
   document.getElementById('dtHead').innerHTML=
     '<tr><th>Month</th><th>Registry</th><th>Dashboard</th><th>BL Completed</th><th>BL Expired</th>'+
-    '<th>Conv %</th><th>Expiry %</th><th>Dx Dashboard</th><th>Dx BL</th>'+
+    '<th>Completion %</th><th>Expiry %</th><th>Dx Dashboard</th><th>Dx BL</th>'+
     '<th>Cum Dashboard</th><th>Cum Completed</th><th>Cum Expired</th><th>Cum Active</th><th></th></tr>';
   const cv=(v,col)=>'<td style="'+(col?'color:'+col+';':'')+'">'+(v==null?'<span style="color:var(--rule)">—</span>':v)+'</td>';
   document.getElementById('dtBody').innerHTML=sorted.map(function(d){
