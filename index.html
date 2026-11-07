@@ -239,6 +239,14 @@ body {
 }
 .band-note strong { color:var(--coral); }
 
+/* ── CALC BOX (small math under each figure) ───────────────── */
+.calc{display:inline-block;margin-top:1rem;padding:8px 14px;background:var(--slate-pale);border-radius:4px;}
+.calc-row{display:grid;grid-template-columns:110px 1fr;gap:10px;font-size:10px;line-height:1.7;}
+.calc-k{color:var(--ink-3);}
+.calc-v{font-family:'IBM Plex Mono',monospace;color:var(--ink-3);}
+.calc-plain{font-family:inherit;}
+@media (max-width:600px){.calc-row{grid-template-columns:1fr;gap:0;}}
+
 /* ── MATH BLOCK ─────────────────────────────────────────── */
 .math-block {
   margin-top:1rem;
@@ -493,11 +501,10 @@ body {
 <div class="header">
   <div class="header-wordmark">
     <div class="header-title">Aim 2 — Participation Tracker</div>
-    <div class="header-meta">APR 2025 → AUG 2026 &nbsp;&middot;&nbsp; BASELINE GOAL: <span id="goalDisplay">800</span></div>
+    <div class="header-meta">APR 2025 → DEC 2026 &nbsp;&middot;&nbsp; BASELINE GOAL: <span id="goalDisplay">800</span></div>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showTab('dashboard')">Dashboard</button>
-    <button class="nav-btn" onclick="showTab('working')">Still Working On</button>
     <button class="nav-btn" onclick="showTab('data')">Edit data</button>
   </nav>
 </div>
@@ -509,9 +516,6 @@ body {
 
   <div class="metric-row" id="metricGrid"></div>
   <div class="annotation-strip" id="annotationBox"></div>
-  <div class="dx-strip" id="dxPanel">
-    <strong>Depression Dx overlay active.</strong> Two shaded bands hug the BL Completed line — the green line is the anchor. <strong>Below it (darker plum):</strong> Dx participants who completed baseline, shown as a proportional band. <strong>Above it (lighter plum):</strong> Dx participants who are in the not-yet-completed zone (Dashboard but no BL). If both bands are similar in depth, Dx is not disproportionately driving non-completion. Raw counts appear in the hover tooltip.
-  </div>
 
   <div class="chart-card">
     <div class="chart-header">
@@ -525,14 +529,10 @@ body {
         <span class="legend-item"><span class="li-swatch" style="background:rgba(150,150,150,0.18);border:1px solid #aaa"></span>Active (not expired)</span>
         <span class="legend-item"><span class="li-dash" style="border-color:var(--coral)"></span>Goal</span>
         <span class="legend-item"><span class="li-dash" style="border-color:#aaa;border-top-style:dotted"></span>Projected</span>
-        <span id="dxLegend" style="display:none;gap:14px;" class="legend-item">
-          <span class="legend-item"><span class="li-swatch" style="background:rgba(91,45,110,0.22);border:1px solid var(--plum)"></span>Dx among BL completers</span>
-          <span class="legend-item"><span class="li-swatch" style="background:rgba(91,45,110,0.13);border:1px solid #9B6AAE"></span>Dx in not-completed zone</span>
-        </span>
       </div>
     </div>
     <div style="font-size:11px;color:var(--ink-3);margin-bottom:10px;font-family:'IBM Plex Mono',monospace;letter-spacing:0.2px;">
-      Three outcomes from Dashboard: BL completed &middot; expired (window closed) &middot; still active. Hover for details.
+      Running totals of everyone who reached the Dashboard and how many completed baseline, compared with the 1,000 goal.
     </div>
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;justify-content:flex-end;">
       <span style="font-size:10px;color:var(--ink-3);font-family:'IBM Plex Mono',monospace;letter-spacing:0.3px;">ZOOM</span>
@@ -544,7 +544,7 @@ body {
     <div style="position:relative;width:100%;height:420px;">
       <canvas id="mainChart"></canvas>
     </div>
-    <div id="splitCharts" style="display:none;display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:1.5rem;">
+    <div id="splitCharts" style="display:none;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:1.5rem;">
       <div>
         <div style="font-size:12px;font-weight:600;margin-bottom:0.75rem;color:var(--ink);">Overall</div>
         <div style="position:relative;width:100%;height:320px;"><canvas id="splitOverall"></canvas></div>
@@ -558,66 +558,33 @@ body {
         <div style="position:relative;width:100%;height:320px;"><canvas id="splitNoDx"></canvas></div>
       </div>
     </div>
-    <div class="band-note">
-      <strong>Reading the bands:</strong> The shaded gap between the Dashboard line and the BL Completed line = everyone who reached the Dashboard but has not yet completed baseline. The dashed coral line inside the gap marks the expired/active boundary — below it: cumulative expired; above it: still active in their BL window. Active = Dashboard &minus; Completed &minus; Expired.
-    </div>
+    <div class="calc"><div class="calc-row"><span class="calc-k">Active</span><span class="calc-v">Dashboard &minus; BL completed &minus; BL expired</span></div><div class="calc-row"><span class="calc-k">Conversion rate</span><span class="calc-v">BL completed &divide; Dashboard</span></div><div class="calc-row"><span class="calc-k">Expiry rate</span><span class="calc-v">BL expired &divide; Dashboard</span></div><div class="calc-row"><span class="calc-k">Shading</span><span class="calc-v calc-plain">gray = still active; unshaded = expired</span></div></div>
   </div>
 
-  <div class="math-block">
-    <strong>Figure 1 calculations</strong><br>
-    <span class="mpill">Active = Dashboard &minus; BL Completed &minus; BL Expired</span>
-    <span class="mpill">Conv. rate = BL Completed &divide; Dashboard</span>
-    <span class="mpill">Expiry rate = BL Expired &divide; Dashboard</span><br>
-    Cumulative Jun-26: 649 Dashboard &middot; 406 completed (63%) &middot; 173 expired (27%) &middot; 70 active (11%) &middot; 406+173+70 = 649 &check;
-  </div>
 
   <!-- Figure 2 -->
   <div class="fig-card">
     <div class="section-label">Figure 2</div>
     <div class="section-heading">Does depression predict who drops off before completing baseline?</div>
-    <div class="section-sub">Side-by-side comparison of Dashboard participants with vs. without a depression diagnosis. If conversion rates are similar, Dx is not the driver of pre-baseline dropout.</div>
+    <div class="section-sub">Baseline completion for people with and without a depression diagnosis, side by side.</div>
     <div id="fig2"></div>
   </div>
 
-  <!-- Figure 4 -->
-  <div class="fig-card">
-    <div class="section-label">Figure 4</div>
-    <div class="section-heading">Monthly expiry trend</div>
-    <div class="section-sub">Raw expired count per month (bars), the naive expiry rate against that month's Dashboard entrants (slate line), and a cohort-adjusted rate that accounts for the ~3-week BL window (dashed plum line). Because the window spans a month boundary, most people expiring in a given month actually entered the month before.</div>
-    <div style="position:relative;width:100%;height:300px;"><canvas id="fig4chart"></canvas></div>
-    <div class="math-block">
-      <strong>Calculations</strong><br>
-      <span class="mpill">Naive rate = expired &divide; Dashboard entrants that month</span>
-      <span class="mpill">Cohort-adjusted rate = expired &divide; (0.7 &times; prior-month Dashboard + 0.3 &times; this-month Dashboard)</span><br>
-      <strong>Why the adjustment:</strong> with a ~21-day window, only entrants from the first ~9 days of a month can expire within that same month, so roughly 70% of a cohort's expirations land in the following calendar month (assuming uniform within-month entry). The naive rate divides one cohort's expirations by a different cohort's size.<br>
-      Adjusted: Mar 32 &divide; 114 = 28% &middot; Apr 43 &divide; 106 = 41% &middot; May 41 &divide; 137 = 30% &middot; Jun 20 &divide; 145 = 14%. (Feb omitted — no prior-month cohort in the data.)<br>
-      <strong>Censoring caveat:</strong> the latest month is right-censored under either rate — most of its entrants are still inside their window, so its expiry count will rise as windows close. The same lag applies (more mildly) to conversion: a month's completions partly come from the prior month's entrants.
-    </div>
-  </div>
-
-</div>
-
-<!-- ═══════════════ FIGURES ═══════════════ -->
-<div id="working" class="section">
-
-  <!-- Figure 3 -->
+  <!-- Figure 3 (monthly expiry trend) -->
   <div class="fig-card">
     <div class="section-label">Figure 3</div>
-    <div class="section-heading">Does depression predict who expires after reaching the Dashboard?</div>
-    <div class="section-sub">Of the expired baselines, what share had a depression diagnosis? Expired participants never reached dep_dx_past in the survey — this number requires cross-referencing enrollment records.</div>
-    <div id="fig3"></div>
-    <div class="math-block">
-      <strong>Calculations (once expired Dx count is available)</strong><br>
-      <span class="mpill">Dx expiry rate = expired Dx &divide; total Dx at Dashboard</span><br>
-      <span class="mpill">Non-Dx expiry rate = (total expired &minus; expired Dx) &divide; total non-Dx at Dashboard</span><br>
-      Denominator is Dashboard, not BL completed, because expired participants never completed the survey.
-    </div>
+    <div class="section-heading">Monthly expiry trend</div>
+    <div class="section-sub">How many people let their baseline window expire each month, as a count and as a rate.</div>
+    <div style="position:relative;width:100%;height:300px;"><canvas id="fig4chart"></canvas></div>
+    <div class="calc"><div class="calc-row"><span class="calc-k">Naive rate</span><span class="calc-v">expired &divide; Dashboard entrants that month</span></div><div class="calc-row"><span class="calc-k">Adjusted rate</span><span class="calc-v">expired &divide; (0.7 &times; prior-month Dashboard + 0.3 &times; this-month Dashboard)</span></div><div class="calc-row"><span class="calc-k">Why 0.7</span><span class="calc-v calc-plain">With a 21-day window, about 70% of a month&rsquo;s entrants expire in the following month.</span></div></div>
   </div>
 
 </div>
 
 <!-- ═══════════════ DATA ═══════════════ -->
 <div id="data" class="section">
+
+  <p style="font-size:12px;color:var(--ink-3);margin:0 0 1rem;">Changes here are just for curiosity and exploring. They update the charts on this screen but are not saved, and the page goes back to the original, saved numbers when it’s reloaded.</p>
 
   <div class="data-section">
     <div class="data-section-header">
@@ -640,7 +607,7 @@ body {
       <h3>Add a month from cumulative (aggregate) totals</h3>
     </div>
     <div style="padding:0.5rem 1.5rem 0;font-size:11px;color:var(--ink-2);line-height:1.6;max-width:80ch;">
-      Enter the running <strong>all-time totals</strong> (e.g. the aggregate numbers reported through this month). The dashboard subtracts the prior cumulative total to back-calculate this month's values automatically — no manual math needed. <strong>Depression Dx</strong> here means participants with a depression diagnosis (assessed at baseline, so this maps to Dx among BL completed). Leave <strong>Aggregate Dx Dashboard</strong> blank if you don't have it — the pipeline still updates, and the Dx comparison figures stay on their last complete-data month.
+      Enter running all-time totals; the page subtracts earlier months to get this month's numbers. <strong>Depression Dx</strong> = Dx among BL completed. Leave Dx Dashboard blank if you don't have it.
     </div>
     <div class="input-grid" style="grid-template-columns:repeat(5,1fr) auto;">
       <div class="input-col"><label>Month</label><input type="text" id="agg-month" placeholder="Jul-26"></div>
@@ -662,6 +629,7 @@ body {
       <button class="btn-ghost" onclick="resetData()">Reset to defaults</button>
     </div>
     <div class="tbl-wrap">
+      <div id="dataWarnings" style="font-size:11px;color:var(--ochre);line-height:1.6;padding:8px 24px 0;"></div>
       <table class="tbl"><thead id="dtHead"></thead><tbody id="dtBody"></tbody></table>
     </div>
   </div>
@@ -671,7 +639,8 @@ body {
 
 <script>
 const ALL_MONTHS=['Apr-25','May-25','Jun-25','Jul-25','Aug-25','Sep-25','Oct-25','Nov-25','Dec-25','Jan-26','Feb-26','Mar-26','Apr-26','May-26','Jun-26','Jul-26','Aug-26', 'Sep-26', 'Oct-26', 'Nov-26', 'Dec-26'];
-const ANNUAL_GOAL=800;
+const ANNUAL_GOAL=1000;
+const GOAL_END='Dec-26';   // month the goal line reaches 1,000 (change here if the end date moves)
 const DEFAULT_DATA=[
   {month:'Feb-26', registry:494,  dashboard:121, completed:71,  expired:37,  dxDash:24, dxBL:16},
   {month:'Mar-26', registry:333,  dashboard:88,  completed:61,  expired:32,  dxDash:22, dxBL:12},
@@ -684,8 +653,6 @@ const DEFAULT_DATA=[
   {month:'Oct-26', registry:368, dashboard:107, completed:70,  expired:12, dxDash:31,  dxBL:19}
 ];
 let rawData=JSON.parse(JSON.stringify(DEFAULT_DATA));
-let showDx=false;
-let expiredDxVal=null;
 let charts={};
 const mIdx=m=>ALL_MONTHS.indexOf(m);
 const pct=(a,b)=>b>0?Math.round(a/b*100):null;
@@ -694,22 +661,6 @@ const pct=(a,b)=>b>0?Math.round(a/b*100):null;
 // (e.g. Dx conversion rate vs non-Dx conversion rate) differ by more than
 // chance, given their sample sizes. Returns z, p (two-tailed), and a 95% CI
 // for the difference in proportions.
-function twoPropZTest(x1,n1,x2,n2){
-  if(n1<=0||n2<=0) return null;
-  var p1=x1/n1, p2=x2/n2;
-  var pPooled=(x1+x2)/(n1+n2);
-  var se=Math.sqrt(pPooled*(1-pPooled)*(1/n1+1/n2));
-  if(se===0) return {p1:p1,p2:p2,diff:p1-p2,z:0,pValue:1,ciLow:0,ciHigh:0,se:0};
-  var z=(p1-p2)/se;
-  // Two-tailed p-value from standard normal via erf approximation
-  var pValue=2*(1-stdNormCDF(Math.abs(z)));
-  // 95% CI for the unpooled difference (Wald)
-  var seUnpooled=Math.sqrt(p1*(1-p1)/n1+p2*(1-p2)/n2);
-  var diff=p1-p2;
-  var ciLow=diff-1.96*seUnpooled;
-  var ciHigh=diff+1.96*seUnpooled;
-  return {p1:p1,p2:p2,diff:diff,z:z,pValue:pValue,ciLow:ciLow,ciHigh:ciHigh,se:seUnpooled};
-}
 // Standard normal CDF via Abramowitz-Stegun erf approximation
 function stdNormCDF(x){
   var t=1/(1+0.2316419*Math.abs(x));
@@ -720,15 +671,13 @@ function stdNormCDF(x){
 
 // Chi-squared test for 2x2 contingency table
 function chiSquaredTest(x1,n1,x2,n2){
-  var y1=n1-x1, y2=n2-x2;
-  var n=n1+n2;
-  var x_total=x1+x2, y_total=y1+y2;
-  var e11=(n1*x_total)/n;
-  var e12=(n1*y_total)/n;
-  var e21=(n2*x_total)/n;
-  var e22=(n2*y_total)/n;
-  var chi2=((Math.abs(x1*y2-x2*y1)-n/2)*(Math.abs(x1*y2-x2*y1)-n/2)*n)/(n1*n2*x_total*y_total);
-  var pValue=chi2<=0?1:2*(1-stdNormCDF(Math.sqrt(chi2)));
+  // 2x2 chi-squared test with Yates continuity correction, 1 degree of freedom.
+  // Returns null when a group or outcome is empty (the test isn't defined then).
+  const y1=n1-x1, y2=n2-x2, n=n1+n2, xt=x1+x2, yt=y1+y2;
+  if(!(n1>0&&n2>0&&xt>0&&yt>0)||x1<0||x2<0||y1<0||y2<0) return null;
+  const d=Math.max(Math.abs(x1*y2-x2*y1)-n/2,0);
+  const chi2=d*d*n/(n1*n2*xt*yt);
+  const pValue=chi2<=0?1:2*(1-stdNormCDF(Math.sqrt(chi2)));
   return {chi2:chi2,pValue:pValue,p1:x1/n1,p2:x2/n2};
 }
 
@@ -753,6 +702,64 @@ function buildCum(){
   return out;
 }
 
+// Last month the Dx running totals can be trusted: the month before the FIRST
+// month with a blank Dx Dashboard (a blank would count as 0 in every later total).
+// Returns null if the very first month is blank. Pure: reads rows, changes nothing.
+function dxCutoff(rows){
+  const sorted=[...rows].filter(d=>mIdx(d.month)>=0).sort((a,b)=>mIdx(a.month)-mIdx(b.month));
+  let last=null;
+  for(const d of sorted){ if(d.dxDash==null) return last; last=d.month; }
+  return last;
+}
+
+// Running totals per group (all / Dx / non-Dx) for the split view. Pure: reads cum, returns new objects.
+// A month without a Dx-at-Dashboard value gets dx/nodx = null, so those lines stop there.
+function splitGroups(cum,months){
+  const cut=dxCutoff(rawData), cutIdx=cut?mIdx(cut):-1;
+  let dxExp=0;
+  return months.map(m=>{
+    const c=cum[m];
+    const share=(c.rawDashboard>0&&c.rawDxDash!=null)?Math.min(Math.max(c.rawDxDash/c.rawDashboard,0),1):0;
+    dxExp+=(c.rawExpired||0)*share;
+    const grp=(dash,comp,exp)=>({dash,comp,active:Math.round(Math.min(Math.max(dash-comp-exp,0),Math.max(dash-comp,0)))});
+    const hasDx=mIdx(m)<=cutIdx;
+    return {
+      all:grp(c.cumDashboard,c.cumCompleted,c.cumExpired),
+      dx:  hasDx?grp(c.cumDxDash,c.cumDxBL,dxExp):null,
+      nodx:hasDx?grp(c.cumDashboard-c.cumDxDash,c.cumCompleted-c.cumDxBL,c.cumExpired-dxExp):null
+    };
+  });
+}
+
+// Round an axis top up to a clean number (e.g. 742 -> 800) with ~5% headroom.
+function niceMax(v){
+  if(!(v>0))return 10;
+  const step=v*1.05>500?100:(v*1.05>100?50:10);
+  return Math.ceil(v*1.05/step)*step;
+}
+
+// Checks the entered numbers and returns a list of plain-language warnings.
+// Pure: reads the rows, changes nothing. Used on the Edit data page.
+function checkData(rows){
+  const w=[];
+  const cutM=dxCutoff(rows), cutIdx=cutM?mIdx(cutM):-1;
+  const sorted=[...rows].sort((a,b)=>mIdx(a.month)-mIdx(b.month));
+  let cd=0,cc=0,cx=0,cdxD=0,cdxB=0;
+  for(const d of sorted){
+    const m=d.month;
+    if(mIdx(m)<0){w.push(m+': month is not on the timeline (use the format Jun-26).');continue;}
+    ['registry','dashboard','completed','expired','dxDash','dxBL'].forEach(k=>{if(d[k]!=null&&d[k]<0)w.push(m+': '+k+' is negative ('+d[k]+').');});
+    if(d.dxDash!=null&&d.dashboard!=null&&d.dxDash>d.dashboard)w.push(m+': Dx at Dashboard ('+d.dxDash+') is more than total Dashboard ('+d.dashboard+').');
+    if(d.dxBL!=null&&d.completed!=null&&d.dxBL>d.completed)w.push(m+': Dx BL ('+d.dxBL+') is more than total BL completed ('+d.completed+').');
+    cd+=d.dashboard||0;cc+=d.completed||0;cx+=d.expired||0;cdxD+=d.dxDash||0;cdxB+=d.dxBL||0;
+    if(cc+cx>cd)w.push(m+': completed + expired so far ('+(cc+cx)+') is more than Dashboard so far ('+cd+').');
+    if(d.dxDash!=null&&cutIdx>=mIdx(m)&&cdxB>cdxD)w.push(m+': Dx BL so far ('+cdxB+') is more than Dx at Dashboard so far ('+cdxD+').');
+  }
+  const firstBlank=sorted.find(d=>mIdx(d.month)>=0&&d.dxDash==null);
+  if(firstBlank)w.push(firstBlank.month+': Dx Dashboard is blank, so Dx results '+(cutM?'stop at '+cutM:'cannot be shown')+'.');
+  return w;
+}
+
 function showTab(id){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -760,11 +767,9 @@ function showTab(id){
     const t=b.textContent.trim().toLowerCase();
     b.classList.toggle('active',
       (id==='dashboard'&&t==='dashboard')||
-      (id==='working'&&t==='still working on')||
       (id==='data'&&t==='edit data'));
   });
   if(id==='dashboard') renderDashboard();
-  if(id==='working')   renderFig3();
   if(id==='data')      renderDataTable();
 }
 
@@ -801,7 +806,7 @@ function renderAnnotation(l,months,cum){
     '<strong>Current status:</strong> '+l.cumCompleted+' cumulative BL completions ('+pct(l.cumCompleted,ANNUAL_GOAL)+'% of '+ANNUAL_GOAL+' goal). '+
     l.cumExpired+' expired ('+pct(l.cumExpired,l.cumDashboard)+'% of Dashboard), '+l.cumActive+' still active. '+
     'Rolling 3-month completion rate: <strong>'+r3+' / month.</strong> '+
-    'Projected landing Aug-26: <strong>'+proj+'</strong> '+
+    'Projected landing '+ALL_MONTHS[ALL_MONTHS.length-1]+': <strong>'+proj+'</strong> '+
     (proj>=ANNUAL_GOAL?'(on track).':'('+(ANNUAL_GOAL-proj)+' short of '+ANNUAL_GOAL+'; need '+(futureMo.length>0?Math.round((ANNUAL_GOAL-l.cumCompleted)/futureMo.length):'-')+'/month over '+futureMo.length+' months).');
 }
 
@@ -809,24 +814,8 @@ function renderMainChart(cum,months){
   const labels=ALL_MONTHS;
   const dashArr=labels.map(m=>cum[m]?.cumDashboard??null);
   const compArr=labels.map(m=>cum[m]?.cumCompleted??null);
-  // expStackArr no longer used for stacking — kept for tooltip reference
-  const expStackArr=labels.map(m=>cum[m]!=null?cum[m].cumExpired:null);
-  // The expired marker line sits at cumCompleted + cumExpired for each month
-  // This line divides the "not completed" gap into expired (below) and active (above)
-  const expMarkerArr=labels.map(m=>cum[m]!=null?(cum[m].cumCompleted+cum[m].cumExpired):null);
-  const augIdx = ALL_MONTHS.indexOf("Aug-26");
-  const goalArr = ALL_MONTHS.map((_,i)=> i<=augIdx ? Math.round((i/augIdx)*ANNUAL_GOAL) : ANNUAL_GOAL );
-  // Dx raw counts (for tooltip + bands)
-  const dxDashArr=labels.map(m=>cum[m]?.cumDxDash??null);
-  const dxBLArr=labels.map(m=>cum[m]?.cumDxBL??null);
-  // BAND BELOW green line: from (cumCompleted - cumDxBL) up to cumCompleted
-  // This band hugs the underside of BL Completed and shows Dx completers as a proportion
-  const dxBelowArr=labels.map(m=>cum[m]?.cumDxBL!=null
-    ? cum[m].cumCompleted - cum[m].cumDxBL : null);
-  // BAND ABOVE green line: from cumCompleted up to (cumCompleted + (cumDxDash - cumDxBL))
-  // This shows Dx participants who are in the not-completed zone (above the green line)
-  const dxAboveArr=labels.map(m=>cum[m]?.cumDxDash!=null
-    ? cum[m].cumCompleted + (cum[m].cumDxDash - cum[m].cumDxBL) : null);
+  const endIdx = ALL_MONTHS.indexOf(GOAL_END) > 0 ? ALL_MONTHS.indexOf(GOAL_END) : ALL_MONTHS.length-1;  // falls back to the last month if GOAL_END is mistyped
+  const goalArr = ALL_MONTHS.map((_,i)=> Math.round(Math.min(i/endIdx,1)*ANNUAL_GOAL) );
   const last3=months.slice(-3);
   const r3=Math.round(last3.reduce((s,m)=>s+(cum[m].rawCompleted||0),0)/last3.length);
   const latestMIdx=mIdx(months[months.length-1]);
@@ -836,8 +825,10 @@ function renderMainChart(cum,months){
     if(i===latestMIdx)return latestComp;
     return Math.min(latestComp+r3*(i-latestMIdx),ANNUAL_GOAL+400);
   });
+  // label on each green point = running conversion (completed so far ÷ Dashboard so far),
+  // so the number describes the same cumulative totals the line shows
   const convRates={};
-  for(const[m,v] of Object.entries(cum)) if(v.convRate!=null) convRates[m]=v.convRate;
+  for(const[m,v] of Object.entries(cum)){const r=pct(v.cumCompleted,v.cumDashboard);if(r!=null)convRates[m]=r;}
 
   const convPlugin={
     id:'convLabels',
@@ -850,12 +841,6 @@ function renderMainChart(cum,months){
         // Overall conv rate — above the point
         ctx.save();ctx.font='500 10px IBM Plex Mono,monospace';ctx.fillStyle='#1A7A5E';
         ctx.textAlign='center';ctx.fillText(r+'% conv.',pt.x,pt.y-14);ctx.restore();
-        // Dx conv rate — below the point, only when Dx overlay is on
-        if(showDx&&cum[m]&&cum[m].cumDxDash>0){
-          var dxConv=Math.round(cum[m].cumDxBL/cum[m].cumDxDash*100);
-          ctx.save();ctx.font='500 10px IBM Plex Mono,monospace';ctx.fillStyle='#5B2D6E';
-          ctx.textAlign='center';ctx.fillText(dxConv+'% Dx conv.',pt.x,pt.y+22);ctx.restore();
-        }
       });
     }
   };
@@ -874,30 +859,21 @@ function renderMainChart(cum,months){
     }
   };
 
+  // top of y-axis = highest point on the chart (Dashboard, goal or projection) + 5%, rounded up to the next 100
+  const yMax = Math.ceil(Math.max(...dashArr, ...goalArr, ...projArr.filter(v=>v!=null)) * 1.05 / 100) * 100;
+
   if(charts.main)charts.main.destroy();
   charts.main=new Chart(document.getElementById('mainChart'),{
     type:'line',plugins:[convPlugin,enrollAnnotPlugin],
     data:{labels,datasets:[
       {label:'Goal',data:goalArr,borderColor:'#C4451E',borderDash:[8,4],borderWidth:1.5,pointRadius:0,tension:0,fill:false,order:10},
       {label:'Projected',data:projArr,borderColor:'#aaa',borderDash:[3,3],borderWidth:1.5,pointRadius:0,tension:0,fill:false,spanGaps:false,order:9},
-      // Dx band BELOW green line: sits between dxBelowArr and compArr
-      // dxBelowArr = compArr - cumDxBL  (the bottom edge of the Dx-completers band)
-      // fill:'+1' fills from this line UP to the next dataset = BL Completed
-      {label:'Dx BL lower',data:showDx?dxBelowArr:labels.map(()=>null),
-        borderColor:'rgba(0,0,0,0)',backgroundColor:'rgba(91,45,110,0.25)',
-        borderWidth:0,pointRadius:0,tension:0.2,fill:'+1',spanGaps:false,order:5},
       // BL Completed line (green) — anchor for active shading
       {label:'BL Completed',data:compArr,borderColor:'#1A7A5E',backgroundColor:'transparent',borderWidth:2,pointBackgroundColor:'#1A7A5E',pointRadius:labels.map(m=>cum[m]?4:0),tension:0.2,fill:false,spanGaps:false,order:4},
       // Active shading: sits between Completed and Dashboard, representing cumActive
       // fill:'-1' fills DOWN from this line to the previous dataset (BL Completed)
       {label:'Active (shaded)',data:labels.map(m=>cum[m]?.cumActive!=null?cum[m].cumCompleted+cum[m].cumActive:null),
         borderColor:'rgba(0,0,0,0)',backgroundColor:'rgba(150,150,150,0.18)',
-        borderWidth:0,pointRadius:0,tension:0.2,fill:'-1',spanGaps:false,order:3},
-      // Dx band ABOVE green line: sits between compArr and dxAboveArr
-      // dxAboveArr = compArr + (cumDxDash - cumDxBL)  (Dx people in not-completed zone)
-      // fill:'-1' fills from this line DOWN to the previous dataset (Active when visible, BL Completed when hidden)
-      {label:'Dx above',data:showDx?dxAboveArr:labels.map(()=>null),
-        borderColor:'rgba(0,0,0,0)',backgroundColor:'rgba(91,45,110,0.13)',
         borderWidth:0,pointRadius:0,tension:0.2,fill:'-1',spanGaps:false,order:3},
       {label:'Dashboard',data:dashArr,borderColor:'#1B4F8A',borderWidth:2,pointBackgroundColor:'#1B4F8A',pointRadius:labels.map(m=>cum[m]?4:0),tension:0.2,fill:false,spanGaps:false,order:1},
     ]},
@@ -912,17 +888,13 @@ function renderMainChart(cum,months){
           const m=ALL_MONTHS[c.dataIndex];const d=cum[m];
           let s=' '+c.dataset.label+': '+c.parsed.y;
           if(c.dataset.label==='Dashboard'&&d)s+='  ('+d.rawDashboard+' this month)';
-          if(c.dataset.label==='BL Completed'&&d){s+='  ('+convRates[m]+'% conv.)';if(showDx&&d.cumDxBL)s+='  · Dx: '+d.cumDxBL+' ('+Math.round(d.cumDxBL/d.cumCompleted*100)+'%)';}
-          if(c.dataset.label==='Not Completed'&&d)return ' Not yet completed: '+(d.cumDashboard-d.cumCompleted)+'  (expired: '+d.cumExpired+'  active: '+d.cumActive+(showDx&&d.cumDxDash?' · Dx in this group: '+(d.cumDxDash-d.cumDxBL):'')+')';
-          if(c.dataset.label==='Expired marker'&&d)return ' Expired/Active boundary — expired: '+d.cumExpired+'  active: '+d.cumActive;
+          if(c.dataset.label==='BL Completed'&&d)s+='  ('+convRates[m]+'% of Dashboard so far)';
           if(c.dataset.label==='Projected')s+='  (projected)';
-          if(c.dataset.label==='Dx BL lower'&&d)return null;
-          if(c.dataset.label==='Dx above'&&d)return null;
           return s;
         }}}
       },
       scales:{
-        y:{beginAtZero:true,max:ANNUAL_GOAL+400,grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#8A8A84',font:{family:'IBM Plex Mono',size:10},stepSize:50},title:{display:true,text:'Cumulative participants',color:'#8A8A84',font:{family:'IBM Plex Sans',size:10}}},
+        y:{beginAtZero:true,max:yMax,grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#8A8A84',font:{family:'IBM Plex Mono',size:10},stepSize:50},title:{display:true,text:'Cumulative participants',color:'#8A8A84',font:{family:'IBM Plex Sans',size:10}}},
 
         x:{grid:{display:false},ticks:{color:'#8A8A84',autoSkip:false,maxRotation:45,font:{family:'IBM Plex Mono',size:9}}}
       }
@@ -955,8 +927,6 @@ let dxSplitMode=false;
 function toggleDx(){
   dxSplitMode=!dxSplitMode;
   const btn=document.getElementById('dxBtn');
-  const leg=document.getElementById('dxLegend');
-  const panel=document.getElementById('dxPanel');
   const mainChart=document.getElementById('mainChart').parentElement;
   const splitCharts=document.getElementById('splitCharts');
   
@@ -965,16 +935,12 @@ function toggleDx(){
     btn.textContent='Back to Single View';
     mainChart.style.display='none';
     splitCharts.style.display='grid';
-    leg.style.display='none';
-    panel.style.display='none';
     renderDxSplitView();
   } else {
     btn.classList.remove('on');
     btn.textContent='Dx overlay';
     mainChart.style.display='block';
     splitCharts.style.display='none';
-    leg.style.display='none';
-    panel.style.display='none';
     renderDashboard();
   }
 }
@@ -984,66 +950,20 @@ function renderDxSplitView(){
   const months=Object.keys(cum).sort((a,b)=>mIdx(a)-mIdx(b));
   if(!months.length)return;
   
-  // Use only actual months with data
   const labels=months;
-  const convRates={};
-  for(const[m,v] of Object.entries(cum)) if(v.convRate!=null) convRates[m]=v.convRate;
-  
-  // Overall data
-  const dashArr=labels.map(m=>cum[m]?.cumDashboard??null);
-  const compArr=labels.map(m=>cum[m]?.cumCompleted??null);
-  const activeArr=labels.map(m=>cum[m]?.cumActive??null);
-  
-  // Dx data (cumulative). Months without a Dx-at-Dashboard value (e.g. an
-  // aggregate June entry with dxDash left blank) return null so the Dx line
-  // stops there instead of implying a Dx split we don't actually have.
-  let dxDash=0,dxComp=0,dxActive=0;
-  const dxDashArr=labels.map(m=>{
-    if(cum[m])dxDash+=cum[m].rawDxDash||0;
-    return cum[m]&&cum[m].rawDxDash!=null ? (dxDash||null) : null;
-  });
-  const dxCompArr=labels.map(m=>{
-    if(cum[m])dxComp+=cum[m].rawDxBL||0;
-    return cum[m]&&cum[m].rawDxDash!=null ? (dxComp||null) : null;
-  });
-  const dxActiveArr=labels.map(m=>{
-    if(cum[m]){
-      const dxDashTotal=cum[m].cumDxDash||0;
-      const dxCompTotal=cum[m].cumDxBL||0;
-      const dxExpTotal=(cum[m].rawExpired||0)*(cum[m].rawDxDash||0)/(cum[m].rawDashboard||1);
-      dxActive=dxDashTotal-dxCompTotal-dxExpTotal;
-    }
-    return cum[m]&&cum[m].rawDxDash!=null ? (dxActive||null) : null;
-  });
-  
-  // Non-Dx data (cumulative). Same rule — without Dx-at-Dashboard we can't
-  // derive the non-Dx split, so the line stops at the last complete month.
-  let noDxDash=0,noDxComp=0,noDxActive=0;
-  const noDxDashArr=labels.map(m=>{
-    if(cum[m]){
-      noDxDash+=(cum[m].rawDashboard||0)-(cum[m].rawDxDash||0);
-    }
-    return cum[m]&&cum[m].rawDxDash!=null ? (noDxDash||null) : null;
-  });
-  const noDxCompArr=labels.map(m=>{
-    if(cum[m]){
-      noDxComp+=(cum[m].rawCompleted||0)-(cum[m].rawDxBL||0);
-    }
-    return cum[m]&&cum[m].rawDxDash!=null ? (noDxComp||null) : null;
-  });
-  const noDxActiveArr=labels.map(m=>{
-    if(cum[m]){
-      const noDxDashTotal=(cum[m].rawDashboard||0)-(cum[m].rawDxDash||0);
-      const noDxCompTotal=(cum[m].rawCompleted||0)-(cum[m].rawDxBL||0);
-      const noDxExpTotal=(cum[m].rawExpired||0)*((cum[m].rawDashboard-cum[m].rawDxDash)/(cum[m].rawDashboard||1));
-      noDxActive=noDxDashTotal-noDxCompTotal-noDxExpTotal;
-    }
-    return cum[m]&&cum[m].rawDxDash!=null ? (noDxActive||null) : null;
-  });
-  
+
+  // One pure step: for every month, the running totals for each group.
+  // Dx expired is not in the source data, so it is ESTIMATED: each month's
+  // expired people are split by that month's Dx share of Dashboard entrants.
+  // Active = Dashboard − Completed − Expired, kept between 0 and (Dashboard − Completed).
+  const g=splitGroups(cum,labels);
+  const dashArr=g.map(r=>r.all.dash), compArr=g.map(r=>r.all.comp), activeArr=g.map(r=>r.all.active);
+  const dxDashArr=g.map(r=>r.dx?r.dx.dash:null), dxCompArr=g.map(r=>r.dx?r.dx.comp:null), dxActiveArr=g.map(r=>r.dx?r.dx.active:null);
+  const noDxDashArr=g.map(r=>r.nodx?r.nodx.dash:null), noDxCompArr=g.map(r=>r.nodx?r.nodx.comp:null), noDxActiveArr=g.map(r=>r.nodx?r.nodx.active:null);
+
   // Find max value across all 3 to use shared scale
   const allValues=[...dashArr,...dxDashArr,...noDxDashArr].filter(v=>v!=null);
-  const maxVal=Math.max(...allValues)*1.05;
+  const maxVal=niceMax(Math.max(0,...allValues));
   
   // Helper function to create a split chart with shared scale
   function renderSplitChart(canvasId, dashData, compData, activeData) {
@@ -1058,8 +978,7 @@ function renderDxSplitView(){
         if(dsIdx<0)return;
         chart.getDatasetMeta(dsIdx).data.forEach((pt,i)=>{
           if(pt.x==null||pt.y==null)return;
-          const m=labels[i];
-          const r=convRates[m];
+          const r=pct(compData[i],dashData[i]);   // this panel's own running conversion
           if(r==null)return;
           ctx.save();
           ctx.font='500 10px IBM Plex Mono,monospace';
@@ -1105,22 +1024,27 @@ function renderFig2(){
   // (e.g. an aggregate June entry where dxDash was left blank), fall back to the
   // most recent month that DOES have complete Dx data so numerator and
   // denominator stay aligned and the conversion can't exceed 100%.
-  const dxMonths=months.filter(mm=>cum[mm].rawDxDash!=null);
   const latestFull=months[months.length-1];
-  const dxAnchor=dxMonths.length?dxMonths[dxMonths.length-1]:latestFull;
+  const dxAnchor=dxCutoff(rawData);
+  if(!dxAnchor||!cum[dxAnchor]){
+    document.getElementById('fig2').innerHTML='<div class="insight" style="border-color:var(--ochre);background:var(--ochre-pale);color:var(--ink);">No Dx comparison yet: the first month has no Dx Dashboard number.</div>';
+    return;
+  }
   const dxStale=(dxAnchor!==latestFull);
   const l=cum[dxAnchor];
   const dxD=l.cumDxDash,dxB=l.cumDxBL;
   const ndxD=l.cumDashboard-dxD,ndxB=l.cumCompleted-dxB;
-  const dxConv=pct(dxB,dxD),ndxConv=pct(ndxB,ndxD),allConv=pct(cum[latestFull].cumCompleted,cum[latestFull].cumDashboard);
+  const dxConv=pct(dxB,dxD),ndxConv=pct(ndxB,ndxD);
   const diff=Math.abs(dxConv-ndxConv);
 
-  var test=chiSquaredTest(dxB,dxD,ndxB,ndxD);
-  var sig=test.pValue<0.05;
+  var test=chiSquaredTest(dxB,dxD,ndxB,ndxD)||{chi2:0,pValue:1,invalid:true};
+  var sig=!test.invalid&&test.pValue<0.05;
   var iColor=!sig?'var(--ochre)':(dxConv<ndxConv?'var(--coral)':'var(--green)');
   var iBg=!sig?'var(--ochre-pale)':(dxConv<ndxConv?'var(--coral-pale)':'var(--green-pale)');
   var pStr=test.pValue<0.001?'p < 0.001':'p = '+test.pValue.toFixed(3);
-  var iText=!sig
+  var iText=test.invalid
+    ?'<strong>Not enough data to test.</strong> One of the groups is empty or a number does not add up; check the Edit data page.'
+    :!sig
     ?'<strong>No statistically significant difference</strong> ('+dxConv+'% vs '+ndxConv+'%, '+pStr+'). The '+diff+'-point gap is consistent with chance given these sample sizes. Depression does not appear to be driving pre-baseline dropout.'
     :(dxConv<ndxConv
       ?'<strong>Statistically significant lower conversion</strong> among Dx participants ('+dxConv+'% vs '+ndxConv+'%, '+pStr+'). This difference is unlikely to be due to chance.'
@@ -1139,19 +1063,20 @@ function renderFig2(){
         '<div style="text-align:center;margin-top:8px;font-size:11px;font-weight:500;color:var(--blue);font-family:\'IBM Plex Mono\',monospace;">'+ndxConv+'% converted</div>'+
       '</div>'+
     '</div>'+
-    '<div style="text-align:center;font-size:11px;color:var(--ink-3);font-family:\'IBM Plex Mono\',monospace;margin:12px 0 2px;">Overall Dashboard → BL conversion: '+allConv+'%</div>'+
-    (dxStale?'<div style="text-align:center;font-size:10px;color:var(--ochre);font-family:\'IBM Plex Mono\',monospace;margin:2px 0 8px;">Dx comparison shown through '+dxAnchor+' (latest month with Dx-at-Dashboard data). Overall conversion above reflects '+latestFull+'.</div>':'')+
+    (dxStale?'<div style="text-align:center;font-size:10px;color:var(--ochre);font-family:\'IBM Plex Mono\',monospace;margin:2px 0 8px;">Dx comparison shown through '+dxAnchor+' (the month before the first blank Dx Dashboard).</div>':'')+
     '<div class="insight" style="border-color:'+iColor+';background:'+iBg+';color:var(--ink);">'+iText+'</div>'+
-    '<div style="font-size:10px;color:var(--ink-3);font-family:\'IBM Plex Mono\',monospace;line-height:1.7;margin-top:8px;padding:8px 10px;background:var(--paper);border:1px solid var(--rule);">'+
-      'Chi-squared test. χ² = '+test.chi2.toFixed(4)+', '+pStr+'. '+
-      'Significance threshold: p &lt; 0.05. Dx: '+dxB+'/'+dxD+' = '+dxConv+'%. Non-Dx: '+ndxB+'/'+ndxD+' = '+ndxConv+'%.'+
-    '</div>';
+    '<div class="calc"><div class="calc-row"><span class="calc-k">Dx conversion</span><span class="calc-v">Dx BL completed &divide; Dx at Dashboard</span></div><div class="calc-row"><span class="calc-k">Non-Dx conversion</span><span class="calc-v">non-Dx BL completed &divide; non-Dx at Dashboard</span></div><div class="calc-row"><span class="calc-k">Difference test</span><span class="calc-v calc-plain">Chi-squared test; &ldquo;significant&rdquo; if p &lt; 0.05</span></div></div>';
 
   if(charts.fig2Dx)charts.fig2Dx.destroy();
   if(charts.fig2NoDx)charts.fig2NoDx.destroy();
   
   setTimeout(()=>{
-    const maxVal=Math.max(dxD,ndxD)*1.1;
+    // the page may have re-drawn in the meantime: start clean and skip if the canvases are gone
+    if(charts.fig2Dx)charts.fig2Dx.destroy();
+    if(charts.fig2NoDx)charts.fig2NoDx.destroy();
+    charts.fig2Dx=charts.fig2NoDx=null;
+    if(!document.getElementById('fig2DxChart')||!document.getElementById('fig2NoDxChart'))return;
+    const maxVal=niceMax(Math.max(dxD,ndxD));
     
     // Dx chart
     charts.fig2Dx=new Chart(document.getElementById('fig2DxChart'),{
@@ -1193,76 +1118,6 @@ function renderFig2(){
   },50);
 }
 
-function renderFig3(){
-  const cum=buildCum();
-  const months=Object.keys(cum).sort((a,b)=>mIdx(a)-mIdx(b));
-  if(!months.length)return;
-  const l=cum[months[months.length-1]];
-  const totalDxD=l.cumDxDash,totalNdxD=l.cumDashboard-totalDxD;
-  const totalExp=l.cumExpired;
-  const el=document.getElementById('fig3');
-
-  if(expiredDxVal===null){
-    el.innerHTML=
-      '<div class="pending-box">'+
-        '<div class="pending-heading">Data required</div>'+
-        '<p>Of the <strong>'+totalExp+' expired</strong> baselines, how many had a depression diagnosis? This figure requires cross-referencing enrollment records.</p>'+
-        '<input id="expDxIn" type="number" min="0" max="'+totalExp+'" placeholder="0 &ndash; '+totalExp+'">'+
-        '<button class="calc-btn" onclick="submitExpDx()">Calculate</button>'+
-      '</div>';
-    return;
-  }
-
-  var expDx=expiredDxVal,expNdx=totalExp-expDx;
-  var dxR=pct(expDx,totalDxD),ndxR=pct(expNdx,totalNdxD);
-  var diff=Math.abs(dxR-ndxR);
-  var test=chiSquaredTest(expDx,totalDxD,expNdx,totalNdxD);
-  var sig=test.pValue<0.05;
-  var pStr=test.pValue<0.001?'p < 0.001':'p = '+test.pValue.toFixed(3);
-  var iColor=!sig?'var(--ochre)':(dxR>ndxR?'var(--coral)':'var(--green)');
-  var iBg=!sig?'var(--ochre-pale)':(dxR>ndxR?'var(--coral-pale)':'var(--green-pale)');
-  var iText=!sig
-    ?'<strong>No statistically significant difference</strong> ('+dxR+'% vs '+ndxR+'%, '+pStr+'). The '+diff+'-point gap is consistent with chance given these sample sizes. Depression does not appear to be a primary expiry driver.'
-    :(dxR>ndxR
-      ?'<strong>Statistically significant higher expiry rate</strong> among Dx participants ('+dxR+'% vs '+ndxR+'%, '+pStr+'). Depression may be contributing to post-Dashboard disengagement.'
-      :'<strong>Statistically significant higher expiry rate</strong> among non-Dx participants ('+ndxR+'% vs '+dxR+'%, '+pStr+'). Depression is not the primary expiry driver.');
-
-  function bar(label,n,total,rate,color){
-    return '<div style="margin-bottom:1.25rem;">'+
-      '<div style="display:flex;justify-content:space-between;font-size:11px;font-family:\'IBM Plex Mono\',monospace;margin-bottom:5px;">'+
-        '<span style="color:'+color+'">'+label+'</span>'+
-        '<span style="font-weight:500;color:'+color+'">'+n+' / '+total+' = '+rate+'%</span>'+
-      '</div>'+
-      '<div style="background:var(--rule-2);height:28px;overflow:hidden;">'+
-        '<div style="width:'+rate+'%;background:'+color+';height:100%;display:flex;align-items:center;padding-left:10px;font-size:11px;font-weight:500;color:white;font-family:\'IBM Plex Mono\',monospace;">'+rate+'%</div>'+
-      '</div>'+
-    '</div>';
-  }
-
-  el.innerHTML=
-    '<div style="padding:0.5rem 0;">'+
-      bar('Dx participants expired (of '+totalDxD+' Dx at Dashboard)',expDx,totalDxD,dxR,'var(--plum)')+
-      bar('Non-Dx participants expired (of '+totalNdxD+' non-Dx at Dashboard)',expNdx,totalNdxD,ndxR,'var(--blue)')+
-      '<div class="insight" style="border-color:'+iColor+';background:'+iBg+';color:var(--ink);">'+
-        iText+
-        ' <button onclick="resetExpDx()" style="background:none;border:none;color:var(--ink-3);font-size:10px;cursor:pointer;text-decoration:underline;margin-left:8px;font-family:\'IBM Plex Mono\',monospace;">reset</button>'+
-      '</div>'+
-      '<div style="font-size:10px;color:var(--ink-3);font-family:\'IBM Plex Mono\',monospace;line-height:1.7;margin-top:8px;padding:8px 10px;background:var(--paper);border:1px solid var(--rule);">'+
-        'Chi-squared test. χ² = '+test.chi2.toFixed(4)+', '+pStr+'. '+
-        'Significance threshold: p &lt; 0.05. Dx: '+expDx+'/'+totalDxD+' = '+dxR+'%. Non-Dx: '+expNdx+'/'+totalNdxD+' = '+ndxR+'%.'+
-      '</div>'+
-    '</div>';
-}
-
-function submitExpDx(){
-  var v=parseInt(document.getElementById('expDxIn').value);
-  var cum=buildCum();var months=Object.keys(cum);
-  var maxV=cum[months[months.length-1]]?.cumExpired||173;
-  if(isNaN(v)||v<0||v>maxV){alert('Enter a number between 0 and '+maxV);return;}
-  expiredDxVal=v;renderFig3();
-}
-function resetExpDx(){expiredDxVal=null;renderFig3();}
-
 function renderFig4(){
   const cum=buildCum();
   const months=Object.keys(cum).sort((a,b)=>mIdx(a)-mIdx(b));
@@ -1277,7 +1132,7 @@ function renderFig4(){
   // data has no observed prior cohort, so its adjusted rate is omitted.
   const W=0.7; // fraction of a 21-day window that spills into the next month
   const adjRate=months.map((m,i)=>{
-    if(i===0)return null;
+    if(i===0||mIdx(months[i-1])!==mIdx(m)-1)return null;   // needs the month right before
     const prevD=cum[months[i-1]].rawDashboard||0;
     const curD=cum[m].rawDashboard||0;
     const denom=W*prevD+(1-W)*curD;
@@ -1313,10 +1168,12 @@ function renderFig4(){
 // ── DATA TABLE ──────────────────────────────────────
 function renderDataTable(){
   const cum=buildCum();
+  const warn=checkData(rawData);
+  document.getElementById('dataWarnings').innerHTML=warn.length?'<strong>Check these numbers:</strong><br>'+warn.join('<br>'):'';
   const sorted=[...rawData].sort((a,b)=>mIdx(a.month)-mIdx(b.month));
   document.getElementById('dtHead').innerHTML=
     '<tr><th>Month</th><th>Registry</th><th>Dashboard</th><th>BL Completed</th><th>BL Expired</th>'+
-    '<th>Active</th><th>Conv %</th><th>Expiry %</th><th>Dx Dashboard</th><th>Dx BL</th>'+
+    '<th>Conv %</th><th>Expiry %</th><th>Dx Dashboard</th><th>Dx BL</th>'+
     '<th>Cum Dashboard</th><th>Cum Completed</th><th>Cum Expired</th><th>Cum Active</th><th></th></tr>';
   const cv=(v,col)=>'<td style="'+(col?'color:'+col+';':'')+'">'+(v==null?'<span style="color:var(--rule)">—</span>':v)+'</td>';
   document.getElementById('dtBody').innerHTML=sorted.map(function(d){
@@ -1324,7 +1181,6 @@ function renderDataTable(){
     return '<tr>'+
       '<td>'+d.month+'</td>'+
       cv(d.registry)+cv(d.dashboard)+cv(d.completed)+cv(d.expired)+
-      cv(c.cumActive,'var(--slate)')+
       cv(c.convRate!=null?c.convRate+'%':null,'var(--green)')+
       cv(c.expRate!=null?c.expRate+'%':null,'var(--coral)')+
       cv(d.dxDash,'var(--plum)')+cv(d.dxBL,'var(--plum)')+
@@ -1338,6 +1194,7 @@ function renderDataTable(){
 function addRow(){
   var m=document.getElementById('inp-month').value.trim();
   if(!m){alert('Month is required.');return;}
+  if(mIdx(m)<0){alert('Month "'+m+'" is not recognized. Use the format Jun-26 (must match the timeline).');return;}
   var row={month:m,registry:num(document.getElementById('inp-registry').value),dashboard:num(document.getElementById('inp-dashboard').value),completed:num(document.getElementById('inp-completed').value),expired:num(document.getElementById('inp-expired').value),dxDash:num(document.getElementById('inp-dxDash').value),dxBL:num(document.getElementById('inp-dxBL').value)};
   var idx=rawData.findIndex(d=>d.month===m);
   if(idx>=0)rawData[idx]=row;else rawData.push(row);
